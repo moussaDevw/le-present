@@ -1,0 +1,326 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//////////////////////
+// ENUMS
+//////////////////////
+
+enum RoleName {
+  DRIVER
+  TRANSPORTER
+  REFERRER
+  ADMIN
+}
+
+enum InsuranceStatus {
+  PENDING
+  PAID
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum PaymentProvider {
+  WAVE
+  ORANGE
+  FREE
+}
+
+enum PartyType {
+  ASSURE
+  SOUSCRIPTEUR
+}
+
+//////////////////////
+// USERS & ROLES
+//////////////////////
+
+model User {
+  id          Int       @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  phone       String    @unique
+  email       String?   @unique
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  roles       UserRole[]
+  vehicles    Vehicle[]
+  insurances  Insurance[]
+  quotes      InsuranceQuote[]
+  fleets      Fleet[]
+  referrals   ReferralCode[]
+}
+
+model Role {
+  id    Int      @id @default(autoincrement())
+  name  RoleName @unique
+
+  users UserRole[]
+}
+
+model UserRole {
+  id      Int  @id @default(autoincrement())
+  userId  Int
+  roleId  Int
+
+  user    User @relation(fields: [userId], references: [id])
+  role    Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+//////////////////////
+// VEHICLES
+//////////////////////
+
+model Vehicle {
+  id               Int      @id @default(autoincrement())
+  ownerId          Int
+  licensePlate     String   @unique
+  brand            String?
+  model            String?
+  type             String?
+  energy           String?
+  fiscalPower      Int?
+  numberOfSeats    Int?
+  chassis          String?
+  circulationDate  DateTime?
+  valueNew         Float?
+  valueCurrent     Float?
+  createdAt        DateTime @default(now())
+
+  owner       User        @relation(fields: [ownerId], references: [id])
+  insurances  Insurance[]
+  quotes      InsuranceQuote[]
+  fleetLinks  FleetVehicle[]
+}
+
+//////////////////////
+// INSURANCE CORE
+//////////////////////
+
+model InsuranceCompany {
+  id          Int      @id @default(autoincrement())
+  name        String
+  apiBaseUrl  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  products    InsuranceProduct[]
+  quotes      InsuranceQuote[]
+  insurances  Insurance[]
+}
+
+model InsuranceProduct {
+  id          Int      @id @default(autoincrement())
+  companyId   Int
+  code        String
+  name        String
+  category    String
+
+  company     InsuranceCompany @relation(fields: [companyId], references: [id])
+  quotes      InsuranceQuote[]
+  insurances  Insurance[]
+}
+
+//////////////////////
+// QUOTES
+//////////////////////
+
+model InsuranceQuote {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  vehicleId     Int
+  companyId     Int
+  productId     Int
+
+  duration      Int
+  periodicity   String
+  price         Float
+
+  rawRequest    Json?
+  rawResponse   Json?
+
+  createdAt     DateTime @default(now())
+
+  user      User              @relation(fields: [userId], references: [id])
+  vehicle   Vehicle           @relation(fields: [vehicleId], references: [id])
+  company   InsuranceCompany  @relation(fields: [companyId], references: [id])
+  product   InsuranceProduct  @relation(fields: [productId], references: [id])
+}
+
+//////////////////////
+// INSURANCES
+//////////////////////
+
+model Insurance {
+  id                     Int      @id @default(autoincrement())
+  userId                 Int
+  vehicleId              Int
+  companyId              Int
+  productId              Int
+
+  policyNumber           String   @unique
+  referencePartner       String   @unique
+
+  duration               Int
+  periodicity            String
+  responsibilityCivil    Float?
+
+  status                 InsuranceStatus
+
+  startDate              DateTime
+  endDate                DateTime
+
+  createdAt              DateTime @default(now())
+
+  user        User               @relation(fields: [userId], references: [id])
+  vehicle     Vehicle            @relation(fields: [vehicleId], references: [id])
+  company     InsuranceCompany   @relation(fields: [companyId], references: [id])
+  product     InsuranceProduct   @relation(fields: [productId], references: [id])
+
+  details     InsuranceDetail?
+  payments    Payment[]
+  parties     InsuranceParty[]
+  documents   InsuranceDocument[]
+  logs        InsuranceStatusLog[]
+}
+
+model InsuranceDetail {
+  id                Int   @id @default(autoincrement())
+  insuranceId       Int   @unique
+
+  assureData        Json?
+  souscripteurData  Json?
+  vehicleData       Json?
+  garanties         Json?
+  rawPayload        Json?
+
+  insurance         Insurance @relation(fields: [insuranceId], references: [id])
+}
+
+model InsuranceStatusLog {
+  id            Int      @id @default(autoincrement())
+  insuranceId   Int
+  status        InsuranceStatus
+  changedAt     DateTime @default(now())
+
+  insurance     Insurance @relation(fields: [insuranceId], references: [id])
+}
+
+//////////////////////
+// PARTIES
+//////////////////////
+
+model InsuranceParty {
+  id            Int       @id @default(autoincrement())
+  insuranceId   Int
+
+  type          PartyType
+
+  firstName     String
+  lastName      String
+  phone         String?
+  email         String?
+
+  insurance     Insurance @relation(fields: [insuranceId], references: [id])
+}
+
+//////////////////////
+// PAYMENTS
+//////////////////////
+
+model Payment {
+  id                     Int      @id @default(autoincrement())
+  insuranceId            Int
+
+  amount                 Float
+  provider               PaymentProvider
+  status                 PaymentStatus
+
+  externalTransactionId  String   @unique
+
+  createdAt              DateTime @default(now())
+
+  insurance              Insurance @relation(fields: [insuranceId], references: [id])
+  events                 PaymentEvent[]
+}
+
+model PaymentEvent {
+  id          Int      @id @default(autoincrement())
+  paymentId   Int
+  eventType   String
+  payload     Json?
+
+  createdAt   DateTime @default(now())
+
+  payment     Payment @relation(fields: [paymentId], references: [id])
+}
+
+//////////////////////
+// DOCUMENTS
+//////////////////////
+
+model InsuranceDocument {
+  id            Int      @id @default(autoincrement())
+  insuranceId   Int
+
+  fileUrl       String
+  documentType  String
+
+  createdAt     DateTime @default(now())
+
+  insurance     Insurance @relation(fields: [insuranceId], references: [id])
+}
+
+//////////////////////
+// FLEET
+//////////////////////
+
+model Fleet {
+  id          Int      @id @default(autoincrement())
+  ownerId     Int
+  reference   String
+  createdAt   DateTime @default(now())
+
+  owner       User            @relation(fields: [ownerId], references: [id])
+  vehicles    FleetVehicle[]
+}
+
+model FleetVehicle {
+  id         Int @id @default(autoincrement())
+  fleetId    Int
+  vehicleId  Int
+
+  fleet      Fleet   @relation(fields: [fleetId], references: [id])
+  vehicle    Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@unique([fleetId, vehicleId])
+}
+
+//////////////////////
+// REFERRAL
+//////////////////////
+
+model ReferralCode {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id])
+}
