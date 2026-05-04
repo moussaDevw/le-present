@@ -18,6 +18,311 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type UserBasicInfo {
+  id: Int!
+  phone: String!
+  firstName: String
+  lastName: String
+  email: String
+  isActive: Boolean!
+}
+
+type AuthPayload {
+  accessToken: String!
+  refreshToken: String!
+  user: UserBasicInfo!
+}
+
+type VerifyOtpResponse {
+  status: LoginStatus!
+  payload: AuthPayload
+  registrationToken: String
+}
+
+"""The status of the login process"""
+enum LoginStatus {
+  LOGGED_IN
+  REGISTRATION_REQUIRED
+}
+
+type SuccessResponse {
+  success: Boolean!
+  message: String
+}
+
+type VehicleCategory {
+  id: Int!
+  code: String!
+  label: String!
+  description: String
+  isActive: Boolean!
+}
+
+type VehicleGenre {
+  id: Int!
+  categoryId: Int!
+  code: String!
+  label: String!
+  requiresCylinder: Boolean!
+  requiresUsage: Boolean!
+  requiresNbCartes: Boolean!
+  isActive: Boolean!
+  category: VehicleCategory
+}
+
+type Vehicle {
+  id: Int!
+  ownerId: Int!
+  genreId: Int!
+  energyType: EnergyType!
+  licensePlate: String
+  chassis: String
+  brand: String
+  model: String
+  fiscalPower: Int
+  numberOfSeats: Int
+  cylinderVolume: Int
+  usage: VehicleUsage
+  circulationDate: DateTime
+  valueNew: Float
+  valueCurrent: Float
+  isActive: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  genre: VehicleGenre
+}
+
+"""Type d'énergie du véhicule (ESSENCE, DIESEL, ...)"""
+enum EnergyType {
+  ESSENCE
+  DIESEL
+  ELECTRIQUE
+  HYBRIDE
+}
+
+"""Usage du véhicule (COMMERCIAL, NON_COMMERCIAL)"""
+enum VehicleUsage {
+  COMMERCIAL
+  NON_COMMERCIAL
+}
+
+type Quote {
+  id: Int!
+  userId: Int!
+  vehicleId: Int!
+  companyId: Int!
+  productId: Int!
+  fleetId: Int
+  duration: Int!
+  periodicity: Periodicity!
+  price: Float!
+  expiresAt: DateTime
+  externalRequestId: String
+  rawRequest: JSONObject
+  rawResponse: JSONObject
+  createdAt: DateTime!
+}
+
+enum Periodicity {
+  JOUR
+  MOIS
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
+type Guarantee {
+  id: Int!
+  code: String!
+  label: String!
+  description: String
+}
+
+type InsuranceDetail {
+  id: Int!
+  insuranceId: Int!
+  attestationNumber: String
+  linkAttestation: String
+  linkCarteBrune: String
+}
+
+type Subscription {
+  id: Int!
+  userId: Int!
+  vehicleId: Int!
+  companyId: Int!
+  productId: Int!
+  quoteId: Int
+  policyNumber: String!
+  externalPartnerRef: String!
+  duration: Int!
+  periodicity: Periodicity!
+  status: InsuranceStatus!
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  vehicle: Vehicle
+  detail: InsuranceDetail
+}
+
+enum InsuranceStatus {
+  PENDING
+  PAID
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  CANCELLED
+}
+
+type PaymentInitiationResponse {
+  checkoutUrl: String
+  transactionReference: String!
+  status: PaymentStatus!
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
 type Query {
   users: [User!]!
+  vehicleCategories: [VehicleCategory!]!
+  vehicleGenres(categoryId: Int): [VehicleGenre!]!
+  myVehicles: [Vehicle!]!
+  myQuotes: [Quote!]!
+  getGuarantees: [Guarantee!]!
+  mySubscriptions: [Subscription!]!
+}
+
+type Mutation {
+  sendOtp(input: SendOtpInput!): SuccessResponse!
+  verifyOtp(input: VerifyOtpInput!): VerifyOtpResponse!
+  registerWithOtp(input: RegisterUserInput!): AuthPayload!
+  refreshToken(input: RefreshTokenInput!): AuthPayload!
+  logout: SuccessResponse!
+  createVehicle(input: CreateVehicleInput!): Vehicle!
+  updateVehicle(input: UpdateVehicleInput!): Vehicle!
+  deleteVehicle(id: Int!): Boolean!
+  simulateQuote(input: SimulateQuoteInput!): Quote!
+  createGuarantee(input: CreateGuaranteeInput!): Guarantee!
+  updateGuarantee(input: UpdateGuaranteeInput!): Guarantee!
+  createSubscription(input: CreateSubscriptionInput!): Subscription!
+  initiatePayment(input: InitiatePaymentInput!): PaymentInitiationResponse!
+  simulatePaymentSuccess(transactionReference: String!): Boolean!
+}
+
+input SendOtpInput {
+  phone: String!
+}
+
+input VerifyOtpInput {
+  phone: String!
+  code: String!
+}
+
+input RegisterUserInput {
+  firstName: String!
+  lastName: String!
+  registrationToken: String!
+}
+
+input RefreshTokenInput {
+  token: String!
+}
+
+input CreateVehicleInput {
+  genreId: Int!
+  energyType: EnergyType!
+  licensePlate: String
+  chassis: String
+  brand: String
+  model: String
+  fiscalPower: Int
+  numberOfSeats: Int
+  cylinderVolume: Int
+  usage: VehicleUsage
+  circulationDate: DateTime
+  valueNew: Float
+  valueCurrent: Float
+}
+
+input UpdateVehicleInput {
+  genreId: Int
+  energyType: EnergyType
+  licensePlate: String
+  chassis: String
+  brand: String
+  model: String
+  fiscalPower: Int
+  numberOfSeats: Int
+  cylinderVolume: Int
+  usage: VehicleUsage
+  circulationDate: DateTime
+  valueNew: Float
+  valueCurrent: Float
+  id: Int!
+  isActive: Boolean
+}
+
+input SimulateQuoteInput {
+  vehicleId: Int!
+  companyId: Int!
+  duration: Int!
+  periodicity: Periodicity!
+  garanties: [Int!] = []
+  garantiesOptPT: String
+  garantiesOptAR: String
+  garantiesOptAS: String
+}
+
+input CreateGuaranteeInput {
+  code: String!
+  label: String!
+  description: String
+  isActive: Boolean = true
+}
+
+input UpdateGuaranteeInput {
+  code: String
+  label: String
+  description: String
+  isActive: Boolean = true
+  id: Int!
+}
+
+input CreateSubscriptionInput {
+  quoteId: Int!
+  assure: PartyInput
+  souscripteur: PartyInput
+  dateEffet: String
+}
+
+input PartyInput {
+  firstName: String!
+  lastName: String!
+  phone: String!
+  email: String
+  personType: PersonType! = PHYSIQUE
+}
+
+enum PersonType {
+  PHYSIQUE
+  MORALE
+}
+
+input InitiatePaymentInput {
+  insuranceId: Int!
+  provider: PaymentProvider!
+}
+
+enum PaymentProvider {
+  WAVE
+  ORANGE
+  FREE
 }

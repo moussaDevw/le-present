@@ -1,0 +1,3100 @@
+﻿ 
+                                
+ 
+ 
+ 
+ 
+Documentation technique 
+ 
+IntÚgration API Assurance 
+Digitale de lÆA.A.S 
+ 
+ 
+ 
+Novembre 2024 
+ 
+ 
+ 
+ 
+® 2024 A.S.S 
+
+Description API Assurance Digitale A.A.S V.1.0 
+2 
+ 
+ 
+ 
+Table des matiÞres 
+1 
+Introduction ............................................................................................................................................................ 4 
+1.1 
+Objet du document ............................................................................................................................ 4 
+1.2 
+Contenu et structure .......................................................................................................................... 4 
+2 
+SÚcuritÚ ..................................................................................................................................................................... 5 
+2.1 
+Identification ...................................................................................................................................... 5 
+2.2 
+Authentification ................................................................................................................................. 5 
+3 
+Description des APIs ............................................................................................................................................. 6 
+3.1 
+Principe des Úchanges ....................................................................................................................... 6 
+3.2 
+URLs de bases ..................................................................................................................................... 6 
+3.3 
+MÚta DonnÚes ..................................................................................................................................... 6 
+3.3.1 
+Garanties ........................................................................................................................................................................................................... 6 
+3.3.2 
+PÚriodicitÚ et durÚe ....................................................................................................................................................................................... 7 
+3.3.3 
+Genre ................................................................................................................................................................................................................... 8 
+3.3.4 
+Energie .............................................................................................................................................................................................................. 10 
+3.3.5 
+Type Personne ............................................................................................................................................................................................... 10 
+3.3.6 
+Type dÆusage catÚgorie 5 deux roues ................................................................................................................................................... 10 
+4 
+API de vÚrification solde Qr Code (stock-qr) .............................................................................. 11 
+5 
+APIs de Gestion des attestations Mono.......................................................................................................... 13 
+5.1 
+API de calcul de la RC dÆune attestation Mono (rc.request) .................................................... 13 
+5.2 
+API de gÚnÚration dÆune attestation Mono (qrcode.request) ................................................... 16 
+5.3 
+API dÆinvalidation dÆune attestation Mono (qrcode.mono.cancel) ......................................... 20 
+5.4 
+API de calcul de la RC dÆune attestation Remorque (remorque-rc- request) ....................... 21 
+5.5 
+API de gÚnÚration dÆune attestation Remorque (remorque-qrcode- request) ...................... 24 
+6 
+APIs de Gestion des attestations deux roues (C5) ...................................................................................... 28 
+6.1 
+API de calcul de la RC dÆune attestation deux roues (rc.moto) ................................................ 28 
+6.2 
+API de gÚnÚration dÆune attestation deux roues (moto-qrcode- request) ............................. 31 
+7 
+APIs de Gestion des attestations Flotte ......................................................................................................... 35 
+7.1 
+API de calcul de la RC pour flotte (rc.flotte.request) ................................................................ 35 
+7.2 
+API de gÚnÚration dÆattestations flotte (qrcode.flotte.request) ............................................... 39 
+8 
+APIs de Gestion des Bus Ecole .......................................................................................................................... 47 
+8.1 
+API de calcul de la RC dÆune attestation Bus (bus.ecole.rc) ..................................................... 47 
+
+Description API Assurance Digitale A.A.S V.1.0 
+3 
+ 
+ 
+8.2 
+API de gÚnÚration dÆune attestation Bus Ecole (bus.ecole.rc-qrcode- request) .................... 49 
+10APIs de Gestion des vÚhicules ½ Garage ╗........................................................................................................ 54 
+10.1 
+API de calcul de la RC dÆune attestation Garage (garage) ........................................................ 54 
+10.2 
+API de gÚnÚration dÆune attestation Garage (garage.request) ................................................. 56 
+ 
+
+Description API Assurance Digitale A.A.S V.1.0 
+4 
+ 
+ 
+ 
+ 
+1 Introduction 
+1.1 Objet du document 
+Ce document a pour but de dÚcrire le mode opÚratoire dÆintÚgration des API de lÆAssurance Digitale 
+de lÆA.A.S pour la branche AUTOMOBILE : 
+ 
+1.2 Contenu et structure 
+La premiÞre section dÚcrit les informations dÆidentification et dÆauthentification aux API de 
+lÆAssurance Digitale de lÆ A.A.S. La section suivante prÚsente les diffÚrents API et de leur 
+fonctionnement. 
+Pour chaque API, une URL de test est fournie afin de valider lÆintÚgration. 
+LÆURL de Prod est Ó utiliser pour la mise en production de vos services avec les identifiants de 
+production qui vous seront fournis par A.A.S. 
+
+Description API Assurance Digitale A.A.S V.1.0 
+5 
+ 
+ 
+ 
+2 SÚcuritÚ 
+2.1 Identification 
+Le partenaire sÆidentifie avec le paramÞtre suivant : access_token. Ces paramÞtres seront fournis 
+par A.A.S Ó la crÚation du compte de la compagnie. Avec une paramÞtre la compagnie pourra 
+utiliser les API dÆauthentification pour crÚer une session. 
+ 
+2.2 Authentification 
+LÆauthentification se fait lors dÆun appel dÆun service avec le couple (username et password). Par dÚfaut, le 
+username est token et le password correspond au access_token qui vous sera fourni. 
+ 
+
+Description API Assurance Digitale A.A.S V.1.0 
+6 
+ 
+ 
+ 
+3 Description des APIs 
+3.1 Principe des Úchanges 
+ò Les donnÚes Úchanges sont au format json. 
+ò Un code dÆerreur http signifie que la requÛte a ÚchouÚ causÚ par un problÞme dans les 
+donnÚes de la requÛte ou une exception. Un code de rÚussite (codes 200, 201,202), est renvoyÚ 
+en cas de rÚussite de la requÛte http et le paramÞtre operationStatus doit Ûtre en SUCCESS. 
+Toute autre valeur que SUCCESS signifie que la requÛte a ÚchouÚ. 
+ 
+3.2 URLs de bases 
+Les URLs de base sont les suivantes : 
+ò Sandbox: https://manager.lasecu-assurances.sn/  
+ò Production : https://manager.lasecu-assurances.sn/   
+Toutes les API sont accessible en HTTPS afin de garantir la sÚcuritÚ des donnÚes. Les Úchanges 
+HTTP non chiffrÚs nÆest pas pris en charge. 
+Dans la suite le paramÞtre {URL} doit Ûtre remplacÚ par lÆURL de la Sandbox pour les tests et 
+lÆURL de Production pour lÆintÚgration en production et le paramÞtre {partner} doit Ûtre 
+remplacÚ par votre nom de partenaire qui vous sera communiquÚ lors de la crÚation de vos 
+accÞs. 
+ 
+ 
+3.3 MÚta DonnÚes 
+3.3.1 Garanties  
+Tableau des valeurs attendus pour le paramÞtre garanties. 
+ 
+Valeur 
+LibellÚ 
+1 
+DÚfense et recours 
+2 
+Personnes transportÚes 
+3 
+Bris de glace 
+4 
+Avance / Recours 
+5 
+Incendie 
+
+Description API Assurance Digitale A.A.S V.1.0 
+7 
+ 
+ 
+6 
+Vol 
+7 
+Tierce collision 
+8 
+Tierce complÞte 
+ 
+3.3.2 PÚriodicitÚ et durÚe 
+Tableau des valeurs attendus pour les paramÞtres pÚriodicite et duree : 
+ 
+PÚriodicitÚ DurÚe 
+JOUR 
+Entre 1 et 366 
+MOIS 
+Entre 1 et 12 
+
+Description API Assurance Digitale A.A.S V.1.0 
+8 
+ 
+ 
+ 
+ 
+3.3.3 Genre 
+ 
+Tableau des valeurs attendus pour le paramÞtre genre : 
+ 
+CatÚgorie 
+Genre 
+Description 
+C1 
+VP 
+VÚhicule Particulier 
+C2 
+TPC 
+VÚhicules utilitaires Ó carrosserie Tourisme (ex: Breakà) 
+TPC3T500 
+VÚhicules utilitaires autres carrosseries jusqu'Ó 3T 500 
+TPC3T500P 
+VÚhicules utilitaires autres carrosseries au-delÓ de 3T 500 
+C3 
+TPM3T500 
+VÚhicules transports publics de marchandises jusqu'Ó 3T 500 
+TPM3T500P 
+VÚhicules transports publics de marchandises au-delÓ de 3T 
+500 
+C4 
+TPV8 
+VÚhicules utilisÚs pour transports de personnes Ó titre onÚreux 
+8 places au plus 
+TPV9 
+VÚhicules utilisÚs pour transports de personnes Ó titre onÚreux 
+9 places et plus 
+C5 
+2RCYC 
+VÚhicules motorisÚs Ó deux roues ou trois roues - 
+Cyclomoteurs 
+2RSCO 
+VÚhicules motorisÚs Ó deux roues ou trois roues - Scooters et 
+vÚlomoteurs jusqu'Ó 125 cm3 
+2RMOT 
+VÚhicules motorisÚs Ó deux roues ou trois roues - 
+Motocyclettes et scooters de plus de 125 cm3 
+2RSID 
+VÚhicules motorisÚs Ó deux roues ou trois roues - Side-cars 
+(toutes cylindrÚes) 
+C6 
+C6-WG-4R 
+Garage VÚhicule Ó 04 roues 
+C6-WG-ATELIER- 
+AUTRE 
+Garage VÚhicule Ó 02 ou 03 roues pour atelier autre 
+C7 
+C7-AE-SC- 
+VTSDC_2R 
+Side-cars Sans Double Commande 
+C7-AE-VTADC 
+VÚhicule de Tourisme Avec Double Commande 
+C7-AE- 
+VTADC_TPC 
+VÚhicule des catÚgories 2, 3 Avec Double Commande 
+C7-AE-VTSDC 
+VÚhicule de Tourisme Sans Double Commande 
+C7-AE- 
+VTSDC_TPC 
+VÚhicule des catÚgories 2, 3 Sans Double Commande 
+
+Description API Assurance Digitale A.A.S V.1.0 
+9 
+ 
+ 
+ 
+ 
+ 
+CatÚgorie 
+Genre 
+Description 
+C8 
+C8-VLSC 
+VÚhicule de Location Sans Chauffeur 
+C8-VLSC 
+VÚhicule de Location Sans Chauffeur 
+C8-VLSC_TPC 
+VÚhicule de Location Sans Chauffeur TPC 
+C8- 
+VLSC_TPM3T500 
+VÚhicule de Location Sans Chauffeur TPM moins de 3T500 
+C8- 
+VLSC_TPM3T500P 
+VÚhicule de Location Sans Chauffeur TPM plus de 3T500 
+C9 
+C9-EMC- 
+EXCLUSION 
+Engins Mobiles de Chantier avec exclusions des accidents 
+C9-EMC- 
+EXTENSION 
+Engins Mobiles de Chantier avec extension des accidents 
+C10 
+C10-VS-EMC 
+Engins mobiles de chantiers - Tracteurs forestiers (avec ou sans 
+chenilles) ne circulant pas sur la route 
+C10-VS- 
+EMC_TPC3T500 
+Engins mobiles de chantiers - Tracteurs forestiers (avec ou sans 
+chenilles) ne circulant pas sur la route de moins de 3T500 
+C10-VS- 
+EMC_TPC3T500P 
+Engins mobiles de chantiers - Tracteurs forestiers (avec ou sans 
+chenilles) ne circulant pas sur la route de plus de 3T500 
+C10-VS-TAR 
+Tracteurs agricoles et routiers (avec ou sans chenilles) 
+C10-VS- 
+TAR_TPC3T500 
+Tracteurs agricoles et routiers (avec ou sans chenilles) de 
+moins de 3T500 
+C10-VS- 
+TAR_TPC3T500P 
+Tracteurs agricoles et routiers (avec ou sans chenilles) de plus 
+de 3T500 
+C10-VS-VACFF 
+Voitures dÆambulances, corbillards et fourgons funÚraires 
+C10-VS-VAME 
+VÚhicules automobiles Ó moteur Úlectrique 
+C10-VS-VCP 
+VÚhicules des collectivitÚs publiques 
+C10-VS- 
+VCP_TPC3T500 
+VÚhicules des collectivitÚs publiques de moins de 3T500 
+C10-VS- 
+VCP_TPC3T500P 
+VÚhicules des collectivitÚs publiques de plus de 3T500 
+BUS_ECOLE 
+BE-VTA 
+VÚhicule de Transport dans des autocars 
+BE-VTCATP 
+Transport dans des camions amÚnagÚs pour le transport de 
+personnes 
+REMORQUE 
+REMORQUE 
+Remorque 
+ 
+Important : Les vÚhicules du Pool TPV (C4) sont exclus pour le moment de la digitalisation des 
+assurances automobiles. 
+
+Description API Assurance Digitale A.A.S V.1.0 
+10 
+ 
+ 
+ 
+ 
+3.3.4 Energie 
+Tableau des valeurs attendus pour le paramÞtre energie : 
+energie 
+ESSENCE 
+DIESEL 
+3.3.5 Type Personne 
+Tableau des valeurs attendus pour le paramÞtre typePersonne , qui reprÚsente le type de 
+souscripteur : personne morale ou physique. 
+ 
+typePersonne 
+PHYSIQUE 
+MORALE 
+ 
+3.3.6 Type dÆusage catÚgorie 5 deux roues 
+Tableau des valeurs attendus pour le paramÞtre usage, qui reprÚsente lÆusage qui est fait dÆun 
+vÚhicule 2 roues : commerciale ou non commerciale. 
+ 
+usage 
+commerciale 
+non_commerciale 
+
+Description API Assurance Digitale A.A.S V.1.0 
+11 
+ 
+ 
+ 
+4 API de vÚrification solde Qr Code (stock-qr) 
+Cet API permet de rÚcupÚrer le solde (stock) courant de QR Code virtuel disponible sur le systÞme. Ce solde 
+est mis Ó jour Ó chaque commande de QR validÚe (incrÚmentÚ) et Ó chaque gÚnÚration/production dÆune 
+attestation (dÚcrÚmentÚ). 
+ 
+MÚthode : GET 
+URL: {URL}/api/v1/{partner}/stock.qr 
+Request Body: 
+Aucun 
+Nom 
+Type 
+Description 
+ 
+Exemple de request: 
+ 
+ 
+ 
+Response: 
+Nom 
+Type 
+Description 
+operationStatus 
+String 
+Statut de la requÛte : SUCCESS ou ERROR 
+operationMessage 
+String 
+Message liÚ au statut de la requÛte 
+data 
+Integer 
+Solde QrCode virtuel 
+Exemple de response: 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body : { } 
+{ 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": 80 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+12 
+ 
+ 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+6000 
+ERROR 
+Erreur de traitement 
+ 
+
+Description API Assurance Digitale A.A.S V.1.0 
+13 
+ 
+ 
+ 
+5 APIs de Gestion des attestations Mono 
+Cette section dÚcrit les diffÚrents API pour la gestion/production des attestations digitales 
+automobiles Mono. 
+ 
+Le tableau suivant liste les diffÚrentes API de gestion des attestations Mono et leur description : 
+Nom 
+Description 
+rc.request 
+Permet dÆobtenir le montant de la prime RC selon les 
+caractÚristiques du vÚhicule et de la durÚe 
+qrcode.request 
+Permet de gÚnÚrer un QR Code et une attestation 
+automobile digitale mono 
+qrcode.mono.cancel 
+Permet dÆannuler/ invalider une attestation digitale 
+remorque.rc.request 
+Permet dÆobtenir le montant de la prime RC selon les 
+caractÚristiques de la remorque et de la voiture motrice 
+remorque.qrcode.request 
+Permet de gÚnÚrer un QR Code et une attestation 
+automobile digitale pour une remorque 
+ 
+ 
+5.1 API de calcul de la RC dÆune attestation Mono (rc.request) 
+Cette API permet dÆobtenir le montant de la prime RC selon les caractÚristiques du vÚhicule. 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/rc.request 
+ 
+Request Params: 
+Nom 
+Obligatoire 
+Type 
+Description 
+puissanceFiscale 
+X 
+String 
+Puissance fiscale du vÚhicule 
+duree 
+X 
+String 
+DurÚe de la souscription en mois ou 
+en jour 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR 
+genre 
+X 
+String 
+Genre du vÚhicule (VP, TPC, à) 
+permettant de calculer la prime RC. 
+Voir le tableau des Genres 
+energie 
+X 
+String 
+Type dÆÚnergie (ESSENCE ou 
+DIESEL) 
+
+Description API Assurance Digitale A.A.S V.1.0 
+14 
+ 
+ 
+ 
+ 
+ 
+ 
+Exemple de body: 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+BigDecimal 
+Code de retour de la requÛte 
+operationStatus 
+String 
+Statut de la requÛte : SUCCESS ou 
+ERROR 
+operationMessage 
+String 
+Message liÚ au statut de la requÛte 
+data 
+BigDecimal 
+Prime Net RC 
+Exemple de Response: 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body : 
+{ 
+" puissanceFiscale ":14, 
+"duree": 6, 
+"periodicite": MOIS, 
+"genre":"VP", 
+"energie":"ESSENCE", 
+} 
+{ 
+"code": 2000 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": 49915 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+15 
+ 
+ 
+ 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4007 
+ERROR 
+Merci de renseigner un genre valide 
+4008 
+ERROR 
+Merci de renseigner une Únergie valide 
+
+Description API Assurance Digitale A.A.S V.1.0 
+16 
+ 
+ 
+ 
+ 
+5.2 API de gÚnÚration dÆune attestation Mono (qrcode.request) 
+Cet API permet de gÚnÚrer un QR Code et une attestation automobile digitale mono. Le QR Code 
+gÚnÚrÚ sera dÚduit du stock de ½ QR code virtuel ╗ de la compagnie. 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/qrcode.request 
+Request Body : 
+Nom 
+Obligatoire 
+Type 
+Description 
+responsabiliteCivile 
+X 
+BigDecimal 
+Montant ResponsabilitÚ civile 
+dateEffet 
+X 
+String 
+Date effet de lÆattestation automobile 
+Format : AAAA-MM-JJ 
+duree 
+X 
+String 
+DurÚe souscription en mois ou jour. 
+Voir tableau des valeurs attendues 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR. Voir 
+tableau des valeurs attendues 
+garanties 
+X 
+Dict 
+Garanties souscrites 
+Voir le tableau des Garanties 
+police 
+X 
+String 
+NumÚro de la police dÆassurance. 
+typePersonne 
+X 
+string 
+Type du souscripteur : PHYSIQUE ou 
+MORALE 
+souscripteur 
+X 
+Objet 
+Informations sur le souscripteurs du 
+contrat 
+nom 
+X 
+String 
+Nom du souscripteur 
+prenom 
+X 
+String 
+PrÚnom du souscripteur 
+cellulaire 
+String 
+Cellulaire du souscripteur 
+email 
+String 
+Email du souscripteur 
+assure 
+X 
+Objet 
+Informations sur le bÚnÚficiaire du 
+contrat 
+nom 
+X 
+String 
+Nom du bÚnÚficiaire 
+prenom 
+X 
+String 
+PrÚnom du bÚnÚficiaire 
+cellulaire 
+String 
+Cellulaire du bÚnÚficiaire 
+email 
+String 
+Email du bÚnÚficiaire 
+vehicule 
+Objet 
+Informations technique du vÚhicule 
+puissanceFiscale 
+X 
+Int 
+Puissance fiscale du vÚhicule 
+dateMiseCirculation 
+X 
+String 
+Date de mise en circulation du 
+vÚhicule 
+
+Description API Assurance Digitale A.A.S V.1.0 
+17 
+ 
+ 
+ 
+ 
+ 
+valeurNeuve 
+BigDecimal 
+Valeur vÚnal du vÚhicule 
+valeurActuelle 
+BigDecimal 
+Valeur actuelle du vÚhicule 
+immatriculation 
+X 
+String 
+Plaque dÆImmatriculation du 
+vÚhicule. Optionnelle si voiture neuve 
+energie 
+X 
+String 
+Energie (ESSENCE ou DIESEL) 
+genre 
+X 
+String 
+Genre du vÚhicule (VP, TPC,à). Voir 
+tableau des valeurs attendues pour le 
+genre 
+modele 
+X 
+String 
+ModÞle du vÚhicule 
+marque 
+X 
+String 
+Marque du vÚhicule 
+chassis 
+X 
+String 
+NumÚro de chÔssis du vÚhicule. 
+Obligatoire si pas de plaque 
+dÆimmatriculation. 
+referenceTrxPartner 
+X 
+String 
+RÚfÚrence interne de la transaction au 
+niveau de la compagnie 
+ 
+ 
+Exemple de request : 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body: 
+{ 
+"responsabiliteCivile":49915, 
+"dateEffet":"2024-03-01", 
+"police":"123456789", 
+"duree":6, 
+"periodicite": "MOIS", 
+"souscripteur":{ 
+"nom":"FALL", 
+"prenom":"MODOU", 
+"cellulaire":"771234578", 
+"email":"modou.fall@test.com" 
+}, 
+"assure":{ 
+
+Description API Assurance Digitale A.A.S V.1.0 
+18 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+Int 
+Code retour 
+status 
+String 
+Statut de la requÛte : SUCCESS ou ERROR 
+message 
+String 
+Message liÚ au statut de la requÛte 
+data 
+Objet 
+referenceExterne 
+String 
+RÚfÚrence interne de la transaction au niveau de 
+la compagnie 
+"nom":"FALL", 
+"prenom":"MODOU", 
+"cellulaire":"771234578", 
+"email":"modou.fall@test.com" 
+}, 
+"vehicule":{ 
+"puissanceFiscale":14, 
+"dateMiseCirculation":"1999-11-08", 
+"nombrePlace":5, 
+"valeurNeuve":4500000.00, 
+"valeurActuelle":3500000.00, 
+"immatriculation":"DK-0000-KL", 
+"energie":"ESSENCE", 
+"genre":"VP", 
+"modele":"LOGAN", 
+"marque":"RENAULD", 
+"chassis":"1234567890OIUYTREZQSDF" 
+}, 
+"referenceTrxPartner":"12345678909876543" 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+19 
+ 
+ 
+ 
+ 
+ 
+attestationNumber 
+String 
+NumÚro de lÆattestation 
+linkAttestation 
+String 
+Lien URL vers lÆattestation digitale 
+secureKey 
+String 
+A ignorer 
+dateExpiration 
+String 
+Date dÆexpiration de lÆattestation calculÚe 
+automatiquement Ó partir de la date dÆeffet et de 
+la durÚe 
+Format: AAAA-MM-JJ-HH-MM-SS 
+linkCarteBrune 
+String 
+Lien URL vers lÆattestation carte brune 
+Exemple de response: 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4006 
+ERROR 
+Merci de renseigner une ResponsabilitÚ civile valide 
+4007 
+ERROR 
+Merci de renseigner un genre valide 
+4008 
+ERROR 
+Merci de renseigner une Únergie valide 
+4010 
+ERROR 
+Votre stock de Qr est ÚpuisÚ. Merci de passer votre commande 
+de QR 
+5006 
+ERROR 
+La rÚfÚrence nÆest pas unique. Merci de renseigner une 
+rÚfÚrence valide 
+{ 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": { 
+"referenceExterne": "PRO12244", 
+"linkAttestation": 
+"https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+"attestationNumber": " SN00JXXXXXX ", 
+"secureKey": "xxxxxxxxxxxxxx", 
+"dateExpiration": "2024-08-26T23:59:59 " 
+" linkCarteBrune ": "https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+20 
+ 
+ 
+ 
+ 
+5.3 API dÆinvalidation dÆune attestation Mono (qrcode.mono.cancel) 
+Cette API permet Ó une compagnie dÆinvalider une attestation digitale Mono. LÆinvalidation 
+dÆune attestation Mono peut Ûtre faite selon les cas suivants : 
+- 
+Annulation : Erreur ou annulation dÆune attestation en cours (ex : avenant, attestation 
+provisoire avant mutation) 
+- 
+RÚsiliation : RÚsiliation dÆune attestation dÆassurance encours (ex : vente, vol) 
+- 
+Suspension : Suspension dÆune attestation 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/qrcode.mono.cancel 
+Query Params: 
+Nom 
+Obligatoire 
+Type 
+Description 
+referenceTrxPartner 
+X 
+String 
+RÚfÚrence de la transaction fournie par la 
+compagnie lors de la gÚnÚration de 
+lÆattestation 
+methode 
+X 
+String 
+Il sÆagit dæune information technique 
+permettant de coder le motif de lÆinvalidation 
+de lÆattestation. Peut prendre trois valeurs : 
+- 
+ANNULER 
+- 
+RESILIER 
+- 
+SUSPENDRE 
+motif 
+String 
+Un champ commentaire permettant de 
+renseigner les motifs de lÆinvalidation dÆune 
+attestation 
+ 
+ 
+Exemple de request: 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body : 
+{ 
+" referenceTrxPartner ":"123456789", 
+"methode": "RESILIER", 
+"motif":"RÚsiliation suite vente", 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+21 
+ 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+operationStatus 
+String 
+Statut de la requÛte : SUCCESS ou ERROR 
+operationMessage 
+String 
+Message liÚ au statut de la requÛte 
+Exemple: 
+ 
+ 
+5.4 API de calcul de la RC dÆune attestation Remorque (remorque-rc- 
+request) 
+Cette API permet dÆobtenir le montant de la prime RC dÆune remorque selon la catÚgorie de la 
+voiture motrice et de la durÚe. 
+ 
+Important : La premiÞre remorque nÆÚtant pas tarifÚe, la prime RC Ó fournir pour la premiÞre 
+remorque doit Ûtre Ó 0 (ZÚro). 
+Pour les remorques supplÚmentaires rattachÚes au mÛme tracteur (referenceVehicule) la RC 
+remorque doit Ûtre calculÚe 
+ 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/remorque.rc.request 
+Body: 
+ 
+ 
+ 
+ 
+ 
+ 
+Exemple de request: 
+{ 
+"operationStatus": "<string>", 
+"operationMessage": "<string>", 
+} 
+Nom 
+Obligatoire 
+Type 
+Description 
+duree 
+X 
+String 
+DurÚe de la souscription en mois ou 
+en jour 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR 
+referenceVehicule 
+X 
+String 
+RÚfÚrence de la voiture motrice de 
+rattachement de la remorque 
+
+Description API Assurance Digitale A.A.S V.1.0 
+22 
+ 
+ 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+BigDecimal 
+Code de retour de la requÛte 
+operationStatus 
+String 
+Statut de la requÛte : SUCCESS ou 
+ERROR 
+operationMessage 
+String 
+Message liÚ au statut de la requÛte 
+data 
+BigDecimal 
+Prime Net RC 
+Exemple de Response: 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body: 
+{ 
+"duree": 12, 
+"periodicite": MOIS, 
+"referenceVehicule":"123456789", 
+} 
+{ 
+"code": 2000 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": 45970 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+23 
+ 
+ 
+ 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4007 
+ERROR 
+Merci de renseigner une durÚe valide 
+4008 
+ERROR 
+RÚfÚrence de vÚhicule inconnue 
+
+Description API Assurance Digitale A.A.S V.1.0 
+24 
+ 
+ 
+ 
+ 
+5.5 API de gÚnÚration dÆune attestation Remorque (remorque-qrcode- 
+request) 
+Cet API permet de gÚnÚrer un QR Code et une attestation automobile digitale pour une remorque. 
+Le QR Code gÚnÚrÚ sera dÚduit du stock de ½ QR code virtuel ╗ de la compagnie. 
+La voiture motrice doit au prÚalable disposer dÆune assurance digitale valable et souscrite dans la 
+mÛme compagnie. 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/remorque.qrcode.request 
+Request Body : 
+Nom 
+Obligatoire 
+Type 
+Description 
+responsabiliteCivile 
+X 
+BigDecimal 
+Montant ResponsabilitÚ civile calculÚ 
+pour la remorque 
+Ou 0 (ZÚro) pour la premiÞre 
+remorque 
+dateEffet 
+X 
+String 
+Date effet de lÆattestation remorque 
+Format : AAAA-MM-JJ 
+dateExpiration 
+X 
+String 
+Date expiration de lÆattestation 
+remorque 
+Format : AAAA-MM-JJ 
+duree 
+X 
+String 
+DurÚe souscription en mois ou jour. 
+Voir tableau des valeurs attendues 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR. Voir 
+tableau des valeurs attendues 
+police 
+X 
+String 
+NumÚro de la police dÆassurance du 
+contrat. 
+referenceVehicule 
+X 
+String 
+RÚfÚrence du vÚhicule auquel la 
+remorque sera attelÚe. 
+referenceTrxPartner 
+X 
+String 
+RÚfÚrence interne de la transaction au 
+niveau de la compagnie 
+typePersonne 
+X 
+string 
+Type du souscripteur : PHYSIQUE ou 
+MORALE 
+immatriculation 
+X 
+String 
+Plaque dÆImmatriculation de la 
+remorque 
+modele 
+X 
+String 
+ModÞle du de la remorque 
+marque 
+X 
+String 
+Marque de la remorque 
+
+Description API Assurance Digitale A.A.S V.1.0 
+25 
+ 
+ 
+ 
+ 
+ 
+souscripteur 
+X 
+Objet 
+Informations sur le souscripteurs du 
+contrat 
+nom 
+X 
+String 
+Nom du souscripteur 
+prenom 
+X 
+String 
+PrÚnom du souscripteur 
+cellulaire 
+String 
+Cellulaire du souscripteur 
+email 
+String 
+Email du souscripteur 
+assure 
+X 
+Objet 
+Informations sur le bÚnÚficiaire du 
+contrat 
+nom 
+X 
+String 
+Nom du bÚnÚficiaire 
+prenom 
+X 
+String 
+PrÚnom du bÚnÚficiaire 
+cellulaire 
+String 
+Cellulaire du bÚnÚficiaire 
+email 
+String 
+Email du bÚnÚficiaire 
+energie 
+X 
+String 
+Energie (ESSENCE ou DIESEL) 
+ 
+ 
+Exemple de request : 
+ 
+{ 
+"dateEffet": "2024-07-11", 
+"dateExpiration": "2025-01-10", 
+"duree": 12, 
+"periodicite": "MOIS", 
+"police": "poltestremorque01", 
+"referenceTrxPartner": "refRemorque02", 
+"referenceVehicule": "reftestRemorque01", 
+"responsabiliteCivile": 0, 
+"immatriculation": "KL2365HA", 
+"marque": "Remoque", 
+"modele": "Remoque", 
+"typePersonne": "PHYSIQUE", 
+"assure": { 
+"cellulaire": "770000000", 
+"email": "test@test.com", 
+"nom": "Fall", 
+"prenom": "Modou" 
+
+Description API Assurance Digitale A.A.S V.1.0 
+26 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+Int 
+Code retour 
+status 
+String 
+Statut de la requÛte : SUCCESS ou ERROR 
+message 
+String 
+Message liÚ au statut de la requÛte 
+data 
+Objet 
+referenceExterne 
+String 
+RÚfÚrence interne de la transaction au niveau de 
+la compagnie 
+attestationNumber 
+String 
+NumÚro de lÆattestation 
+linkAttestation 
+String 
+Lien URL vers lÆattestation digitale 
+secureKey 
+String 
+A ignorer 
+dateExpiration 
+String 
+Date dÆexpiration de lÆattestation calculÚe 
+automatiquement Ó partir de la date dÆeffet et de 
+la durÚe 
+Format: AAAA-MM-JJ-HH-MM-SS 
+linkCarteBrune 
+String 
+Lien URL vers lÆattestation carte brune 
+Exemple de response: 
+ 
+}, 
+"souscripteur": { 
+"cellulaire": "770000000", 
+"email": "test@test.com", 
+"nom": "Fall", 
+"prenom": "Modou" 
+} 
+} 
+{ 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": { 
+"referenceExterne": "refRemorque02", 
+"linkAttestation": "https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+
+Description API Assurance Digitale A.A.S V.1.0 
+27 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4006 
+ERROR 
+Merci de renseigner une ResponsabilitÚ civile valide 
+4007 
+ERROR 
+Merci de renseigner un genre valide 
+4008 
+ERROR 
+Merci de renseigner une Únergie valide 
+4010 
+ERROR 
+Votre stock de Qr est ÚpuisÚ. Merci de passer votre commande 
+de QR 
+5006 
+ERROR 
+La rÚfÚrence nÆest pas unique. Merci de renseigner une 
+rÚfÚrence valide 
+"attestationNumber": " SN00JXXXXXX ", 
+"secureKey": "xxxxxxxxxxxxxx", 
+"dateExpiration": "2024-08-26T23:59:59 " 
+" linkCarteBrune ": "https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+} 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+28 
+ 
+ 
+ 
+6 APIs de Gestion des attestations deux roues (C5) 
+Cette section dÚcrit les diffÚrents API pour la gestion/production des attestations digitales pour les 
+vÚhicules Ó deux ou trois roues CatÚgorie 5. 
+ 
+Le tableau suivant liste les diffÚrentes API de gestion des attestations deux roues et leur 
+description : 
+Nom 
+Description 
+rc.moto 
+Permet dÆobtenir le montant de la prime RC selon les 
+caractÚristiques du vÚhicule, de la durÚe et de lÆusage 
+moto.request 
+Permet de gÚnÚrer un QR Code et une attestation moto digitale 
+qrcode.mono.cancel 
+Permet dÆinvalider une attestation deux roues (voir 6.3 API 
+dÆinvalidation dÆune attestation Mono) 
+ 
+ 
+6.1 API de calcul de la RC dÆune attestation deux roues (rc.moto) 
+Cette permet dÆobtenir le montant de la prime RC selon les caractÚristiques du vÚhicule. 
+MÚthode : GET 
+URL: {URL}/api/v1/{partner}/rc.moto  
+Request Body: 
+Nom 
+Obligatoire 
+Type 
+Description 
+cylindre 
+X 
+Integer 
+Cylindre du vÚhicule. Mettre 0 si pas 
+applicable pour la sous-catÚgorie 
+duree 
+X 
+String 
+DurÚe de la souscription en mois ou 
+en jour 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR 
+genre 
+X 
+String 
+Genre du vÚhicule (2RCYC, 2RSCO, 
+2RMOT, 2RSID) permettant de 
+calculer la prime RC. Voir le tableau 
+des Genres 
+energie 
+X 
+String 
+Type dÆÚnergie (ESSENCE ou 
+DIESEL) 
+usage 
+X 
+String 
+Type dÆusage du vÚhicule 
+(COMMERCIAL ou 
+NON_COMMERCIAL) 
+nombrePlace 
+X 
+String 
+Nombre de places du vÚhicule 
+
+Description API Assurance Digitale A.A.S V.1.0 
+29 
+ 
+ 
+ 
+ 
+ 
+ 
+Exemple de request: 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+BigDecimal 
+Code de retour de la requÛte 
+operationStatus 
+String 
+Statut de la requÛte : SUCCESS ou 
+ERROR 
+operationMessage 
+String 
+Message liÚ au statut de la requÛte 
+data 
+BigDecimal 
+Prime Net RC 
+Exemple de Response: 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body: 
+{ 
+"cylindre ":126, 
+"duree": 6, 
+"periodicite": "MOIS", 
+"genre":" 2RCYC", 
+"energie":"ESSENCE", 
+"usage" : "NON_COMMERCIAL", 
+"nombrePlace":2 
+} 
+{ 
+"code": 2000 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": 14273 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+30 
+ 
+ 
+ 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4007 
+ERROR 
+Merci de renseigner un genre valide 
+4008 
+ERROR 
+Merci de renseigner une Únergie valide 
+
+Description API Assurance Digitale A.A.S V.1.0 
+31 
+ 
+ 
+ 
+ 
+6.2 API de gÚnÚration dÆune attestation deux roues (moto-qrcode- 
+request) 
+Cet API permet de gÚnÚrer un QR Code et une attestation moto digitale. Le QR Code gÚnÚrÚ sera 
+dÚduit du stock de ½ QR code virtuel ╗ de la compagnie. 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/moto.request  
+Request Body : 
+Nom 
+Obligatoire 
+Type 
+Description 
+responsabiliteCivile 
+X 
+BigDecimal 
+Montant ResponsabilitÚ civile 
+dateEffet 
+X 
+String 
+Date effet de lÆattestation moto 
+Format : AAAA-MM-JJ 
+dateExpiration 
+X 
+String 
+Date de fin de lÆattestation moto 
+Format : AAAA-MM-JJ 
+duree 
+X 
+String 
+DurÚe souscription en mois ou jour. 
+Voir tableau des valeurs attendues 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR. Voir 
+tableau des valeurs attendues 
+police 
+X 
+String 
+NumÚro de la police dÆassurance. 
+typePersonne 
+X 
+string 
+Type du souscripteur : PHYSIQUE ou 
+MORALE 
+referenceTrxPartner 
+X 
+String 
+RÚfÚrence interne de la transaction au 
+niveau de la compagnie 
+souscripteur 
+X 
+Objet 
+Informations sur le souscripteurs du 
+contrat 
+nom 
+X 
+String 
+Nom du souscripteur 
+prenom 
+X 
+String 
+PrÚnom du souscripteur 
+cellulaire 
+String 
+Cellulaire du souscripteur 
+email 
+String 
+Email du souscripteur 
+assure 
+X 
+Objet 
+Informations sur le bÚnÚficiaire du 
+contrat 
+nom 
+X 
+String 
+Nom du bÚnÚficiaire 
+prenom 
+X 
+String 
+PrÚnom du bÚnÚficiaire 
+cellulaire 
+String 
+Cellulaire du bÚnÚficiaire 
+email 
+String 
+Email du bÚnÚficiaire 
+vehicule 
+Objet 
+Informations technique de la moto 
+
+Description API Assurance Digitale A.A.S V.1.0 
+32 
+ 
+ 
+ 
+ 
+ 
+cyclindre 
+X 
+Int 
+Cylindre de la moto 
+dateMiseCirculation 
+X 
+String 
+Date de mise en circulation du 
+vÚhicule 
+Format : AAAA-MM-JJ 
+nombrePlace 
+X 
+Int 
+Nombre de place de la moto 
+immatriculation 
+X 
+String 
+Plaque dÆImmatriculation de la moto. 
+energie 
+X 
+String 
+Energie (ESSENCE ou DIESEL) 
+genre 
+X 
+String 
+Genre du vÚhicule (2RCYC, 2RSCO, 
+2RMOT, 2RSID). Voir tableau des 
+valeurs attendues pour le genre 
+modele 
+X 
+String 
+ModÞle de la moto 
+marque 
+X 
+String 
+Marque de la moto 
+ 
+ 
+Exemple de request : 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body: 
+{ 
+"dateEffet": "2024-07-11", 
+"dateExpiration" : "2025-01-10", 
+"duree": 6, 
+"periodicite": "MOIS", 
+"police": "poltest123456", 
+"referenceTrxPartner": "reftest123456", 
+"responsabiliteCivile":14273 , 
+"typePersonne": "PHYSIQUE", 
+"souscripteur":{ 
+"nom":"FALL", 
+"prenom":"MODOU", 
+"cellulaire":"771234578", 
+"email":"modou.fall@test.com" 
+}, 
+
+Description API Assurance Digitale A.A.S V.1.0 
+33 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+Int 
+Code retour 
+status 
+String 
+Statut de la requÛte : SUCCESS ou ERROR 
+message 
+String 
+Message liÚ au statut de la requÛte 
+data 
+Objet 
+referenceExterne 
+String 
+RÚfÚrence interne de la transaction au niveau de 
+la compagnie 
+attestationNumber 
+String 
+NumÚro de lÆattestation 
+linkAttestation 
+String 
+Lien URL vers lÆattestation digitale 
+secureKey 
+String 
+A ignorer 
+dateExpiration 
+String 
+Date dÆexpiration de lÆattestation fournit. 
+"assure":{ 
+"nom":"FALL", 
+"prenom":"MODOU", 
+"cellulaire":"771234578", 
+"email":"modou.fall@test.com" 
+}, 
+"vehicule":{ 
+"cylindre":126, 
+"dateMiseCirculation":"2022-11-08", 
+"nombrePlace":2, 
+"immatriculation":"DK-0000-MT", 
+"energie":"ESSENCE", 
+"genre":"2RCYC", 
+"modele":"Vespa", 
+"marque":"MTN", 
+"usage":"NON_COMMERCIALE" 
+}, 
+"referenceTrxPartner":"reftest123456" 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+34 
+ 
+ 
+ 
+ 
+ 
+Format : AAAA-MM-JJ-HH-MM-SS 
+linkCarteBrune 
+String 
+Lien URL vers lÆattestation carte brune 
+Exemple de response: 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4006 
+ERROR 
+Merci de renseigner une ResponsabilitÚ civile valide 
+4007 
+ERROR 
+Merci de renseigner un genre valide 
+4008 
+ERROR 
+Merci de renseigner une Únergie valide 
+4010 
+ERROR 
+Votre stock de Qr est ÚpuisÚ. Merci de passer votre commande 
+de QR 
+5006 
+ERROR 
+La rÚfÚrence nÆest pas unique. Merci de renseigner une 
+rÚfÚrence valide 
+{ 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": { 
+"referenceExterne": " reftest123456", 
+"linkAttestation": 
+"https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+"attestationNumber": " SN00JXXXXXX ", 
+"secureKey": "xxxxxxxxxxxxxx", 
+"dateExpiration": "2025-01-10T23:59:59" 
+" linkCarteBrune ": "https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+35 
+ 
+ 
+ 
+7 APIs de Gestion des attestations Flotte 
+Cette section dÚcrit les diffÚrents API pour la gestion/production des attestations digitales 
+automobiles Flotte. 
+ 
+Le tableau suivant liste les diffÚrentes API de gestion des attestations Flotte et leur description : 
+Nom 
+Description 
+rc.flotte.request 
+Permet dÆobtenir le montant de la prime RC selon les 
+caractÚristiques du vÚhicule et de la durÚe 
+qrcode.flotte.request 
+Permet de gÚnÚrer un lot de QR Code et dÆattestations 
+automobiles digitales flotte 
+incorpore.flotte.request 
+Permet dÆincorporer une ou plusieurs vÚhicule(s) Ó une 
+flotte existante et de gÚnÚrer les attestations Úquivalentes 
+subtract.flotte.request 
+Permet de supprimer un ou plusieurs vÚhicules dÆune 
+flotte existante 
+ 
+ 
+7.1 API de calcul de la RC pour flotte (rc.flotte.request) 
+Cette permet dÆobtenir le montant de la prime RC selon le nombre de vÚhicule de la flotte et les 
+caractÚristiques de chaque vÚhicule. 
+MÚthode : GET 
+URL: {URL}/api/v1/{partner}/rc.flotte.request 
+ 
+ 
+Request Body: 
+Nom 
+Obligatoire Type 
+Description 
+referenceFlotte 
+X 
+String 
+Reference de la nouvelle flotte. Ou 
+rÚfÚrence dÆune flotte existante si 
+insertion 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR 
+duree 
+X 
+Integer 
+DurÚe du contrat flotte en mois ou en 
+jour 
+dateEffet 
+X 
+String 
+Date effet des attestations automobiles 
+de la flotte 
+Format : AAAA-MM-JJ 
+
+Description API Assurance Digitale A.A.S V.1.0 
+36 
+ 
+ 
+ 
+ 
+ 
+requests 
+Object 
+Liste des caractÚristiques de chaque 
+vÚhicule de la flotte 
+puissanceFiscale 
+X 
+String 
+Puissance fiscale du vÚhicule 
+genre 
+X 
+String 
+Genre du vÚhicule (VP, TPC, à) 
+permettant de calculer la prime RC. 
+Voir le tableau des Genres 
+energie 
+X 
+String 
+Type dÆÚnergie (ESSENCE ou DIESEL) 
+requestId 
+X 
+String 
+RÚfÚrence interne de la transaction au 
+niveau de la compagnie 
+Exemple de request: 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+{ 
+"referenceFlotte": "123f1", 
+"periodicite": "MOIS", 
+"duree": 5 , 
+"dateEffet":"2024-07-10", 
+"requests": [ 
+{ 
+"puissanceFiscale": 10, 
+"genre": "VP", 
+"energie": "ESSENCE", 
+"requestId": "123f11" 
+}, 
+{ 
+"puissanceFiscale": 10, 
+"genre": "VP", 
+"energie": "ESSENCE", 
+"requestId": "123f12" 
+} 
+] 
+
+Description API Assurance Digitale A.A.S V.1.0 
+37 
+ 
+ 
+ 
+ 
+ 
+ 
+Important : 
+La RC appliquÚe sur la flotte est calculÚe selon le barÞme suivant : 
+NOMBRE DE VEHICULES 
+RABAIS DE PRIME 
+10 Ó 20 
+10% 
+21 Ó 40 
+15% 
+41 Ó 60 
+20% 
+Plus de 60 
+25% 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+BigDecimal 
+Code de retour de la requÛte 
+operationStatus 
+String 
+Statut de la requÛte : SUCCESS ou 
+ERROR 
+operationMessage 
+String 
+Message liÚ au statut de la requÛte 
+items 
+requestId 
+String 
+RÚfÚrence interne de la transaction au 
+niveau de la compagnie 
+responsabiliteCivile 
+number 
+Prime RC du vÚhicule 
+Exemple de Response: 
+ 
+} 
+{ 
+"code": 2000, 
+"status": "SUCCESS", 
+"message": "OpÚration effectuÚe avec succÞs.", 
+"items": [ 
+{ 
+"requestId": "123f11", 
+"responsabiliteCivile": 34733 
+}, 
+{ 
+"requestId": "123f12", 
+"responsabiliteCivile": 34733 
+
+Description API Assurance Digitale A.A.S V.1.0 
+38 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4007 
+ERROR 
+Merci de renseigner un genre valide 
+4008 
+ERROR 
+Merci de renseigner une Únergie valide 
+} 
+] 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+39 
+ 
+ 
+ 
+ 
+7.2 API de gÚnÚration dÆattestations flotte (qrcode.flotte.request) 
+Cet API permet de gÚnÚrer un lot de QR Code et dÆattestations automobiles digitales pour une 
+flotte. Il faudrait fournir la liste contenant les informations des vÚhicules de la flotte. 
+ 
+LÆensemble des vÚhicules de la flotte doivent Ûtre inclus dans la liste. 
+ 
+Les QR Code gÚnÚrÚs seront dÚduits du stock de ½ QR code virtuel ╗ de la compagnie. 
+
+Description API Assurance Digitale A.A.S V.1.0 
+40 
+ 
+ 
+ 
+ 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/qrcode.flotte.request 
+Request : 
+Nom 
+Obligatoire Type 
+Description 
+referenceFlotte 
+X 
+String 
+Reference de la flotte au niveau de 
+la compagnie. Sera utilisÚe pour les 
+lors dÆune demande dÆinsertion 
+dateEffet 
+X 
+String 
+Date effet des attestations 
+automobiles de la flotte 
+Format : AAAA-MM-JJ 
+duree 
+X 
+String 
+DurÚe souscription en mois ou jour. 
+Voir tableau des valeurs attendues 
+periodicite 
+X 
+String 
+Type de durÚe MOIS ou JOUR. Voir 
+tableau des valeurs attendues 
+garanties 
+X 
+Dict 
+Garanties souscrites 
+Voir le tableau des Garanties 
+typePersonne 
+X 
+String 
+Type du souscripteur : PHYSIQUE 
+ou MORALE 
+police 
+X 
+String 
+NumÚro de la police 
+souscripteur 
+X 
+Objet 
+Informations sur le souscripteur du 
+contrat 
+nom 
+X 
+String 
+Nom du souscripteur 
+prenom 
+X 
+String 
+PrÚnom du souscripteur 
+cellulaire 
+String 
+TÚlÚphone du souscripteur 
+email 
+String 
+Email du souscripteur 
+items 
+X 
+Objet 
+Liste des informations des vÚhicules 
+de la flotte 
+referenceTrxPartner 
+X 
+String 
+RÚfÚrence interne de la transaction 
+au niveau de la compagnie. Sera 
+utilisÚe pour les demandes 
+dÆannulation (Avenant) 
+responsabiliteCivile 
+X 
+BigDecimal 
+Montant ResponsabilitÚ civile du 
+vÚhicule 
+assure 
+X 
+Objet 
+Informations sur le bÚnÚficiaire du 
+contrat 
+nom 
+X 
+String 
+Nom du bÚnÚficiaire 
+prenom 
+X 
+String 
+PrÚnom du bÚnÚficiaire 
+cellulaire 
+String 
+Cellulaire du bÚnÚficiaire 
+
+Description API Assurance Digitale A.A.S V.1.0 
+41 
+ 
+ 
+email 
+String 
+Email du bÚnÚficiaire 
+vehicule 
+Objet 
+Informations technique du vÚhicule 
+
+Description API Assurance Digitale A.A.S V.1.0 
+42 
+ 
+ 
+ 
+ 
+puissanceFiscale 
+X 
+Int 
+Puissance fiscale du vÚhicule 
+dateMiseCirculation 
+X 
+String 
+Date de mise en circulation du 
+vÚhicule 
+Format : AAAA-MM-JJ 
+nombrePlace 
+X 
+Int 
+Nombre de place du vÚhicule 
+valeurNeuve 
+BigDecimal 
+Valeur vÚnal du vÚhicule 
+valeurActuelle 
+BigDecimal 
+Valeur actuelle du vÚhicule 
+immatriculation 
+X 
+String 
+Immatriculation du vÚhicule 
+energie 
+X 
+String 
+Energie (ESSENCE ou DIESEL) 
+genre 
+X 
+String 
+Genre du vÚhicule (VP, TPC,à). 
+Voir tableau des valeurs attendues 
+pour le genre 
+modele 
+X 
+String 
+ModÞle du vÚhicule 
+marque 
+X 
+String 
+Marque du vÚhicule 
+chassis 
+X 
+String 
+NumÚro de chÔssis du vÚhicule 
+ 
+Exemple de request: 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body: 
+{ 
+"referenceFlotte":"123f2", 
+"dateEffet":"2024-07-10", 
+"duree":5, 
+"periodicite":"MOIS", 
+ôtypePersonneö: "MORALE", 
+"police":"1234567", 
+"souscripteur":{ 
+"nom":"Test ", 
+"prenom":" SARL ", 
+"cellulaire":"770000000", 
+"email":"test@test.com" 
+}, 
+"items":[ 
+{ 
+"responsabiliteCivile":34733, 
+"referenceTrxPartner":"123f21", 
+"assure":{ 
+"nom":" Test ", 
+"prenom":" SARL ", 
+
+Description API Assurance Digitale A.A.S V.1.0 
+43 
+ 
+ 
+ 
+ 
+ 
+ 
+"cellulaire":"770000000", 
+"email":"test@diotali.com" 
+}, 
+"vehicule":{ 
+"puissanceFiscale":10, 
+"dateMiseCirculation":"1999-11-08", 
+"nombrePlace":5, 
+"valeurNeuve":4500000, 
+"valeurActuelle":3500000, 
+"immatriculation":"DK-0000-KL", 
+"energie":"ESSENCE", 
+"genre":"VP", 
+"modele":"LOGAN", 
+"marque":"RENAULD", 
+"chassis":"" 
+} 
+}, 
+{ 
+"responsabiliteCivile":34733, 
+"referenceTrxPartner":"123f22", 
+"assure":{ 
+"nom":" Test ", 
+"prenom":" SARL ", 
+"cellulaire":"770000000", 
+"email":"test@diotali.com" 
+}, 
+"vehicule":{ 
+"puissanceFiscale":10, 
+"dateMiseCirculation":"2000-11-08", 
+"nombrePlace":5, 
+"valeurNeuve":4500000, 
+"valeurActuelle":3500000, 
+"immatriculation":"DK-1000-KL", 
+"energie":"ESSENCE", 
+"genre":"VP", 
+"modele":"LOGAN", 
+"marque":"RENAULD", 
+"chassis":"" 
+} 
+}, 
+{ 
+"responsabiliteCivile":34733, 
+"referenceTrxPartner":"123f23", 
+"assure":{ 
+"nom":" Test ", 
+"prenom":" SARL ", 
+
+Description API Assurance Digitale A.A.S V.1.0 
+44 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+Int 
+Code retour 
+status 
+String 
+Statut de la requÛte : SUCCESS ou ERROR 
+message 
+String 
+Message liÚ au statut de la requÛte 
+items 
+Objet 
+referenceExterne 
+String 
+RÚfÚrence interne de la transaction au niveau de 
+la compagnie 
+attestationNumber 
+String 
+NumÚro de lÆattestation 
+linkAttestation 
+String 
+Lien URL vers lÆattestation digitale 
+secureKey 
+String 
+dateExpiration 
+String 
+Date dÆexpiration de lÆattestation calculÚe 
+automatiquement Ó partir de la date dÆeffet et de 
+la durÚe 
+Format : AAAA-MM-JJ-HH-MM-SS 
+linkCarteBrune 
+String 
+Lien URL vers lÆattestation carte brune 
+Exemple de response: 
+ 
+"cellulaire":"770000000", 
+"email":"test@diotali.com" 
+}, 
+"vehicule":{ 
+"puissanceFiscale":10, 
+"dateMiseCirculation":"2006-11-08", 
+"nombrePlace":5, 
+"valeurNeuve":4500000, 
+"valeurActuelle":3500000, 
+"immatriculation":"DK-2000-KL", 
+"energie":"ESSENCE", 
+"genre":"VP", 
+"modele":"LOGAN", 
+"marque":"RENAULD", 
+"chassis":"" 
+} 
+}, 
+] 
+} 
+{ 
+
+Description API Assurance Digitale A.A.S V.1.0 
+45 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Codes dÆerreurs : 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"items": [ 
+{ 
+"referenceExterne": "123f21", 
+"linkAttestation": 
+"https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+"attestationNumber": " SN00JXXXXXX ", 
+"secureKey": "xxxxxxxxxxxxxx", 
+"dateExpiration": "2024-12-09T23:59:59 ", 
+" linkCarteBrune ": "https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+} , 
+{ 
+"referenceExterne": "123f22", 
+"linkAttestation": 
+"https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+"attestationNumber": " SN00JXXXXXX ", 
+"secureKey": "xxxxxxxxxxxxxx", 
+"dateExpiration": "2024-12-09T23:59:59 ", 
+" linkCarteBrune ": "https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+} , 
+{ 
+"referenceExterne": "123f23", 
+"linkAttestation": 
+"https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+"attestationNumber": " SN00JXXXXXX ", 
+"secureKey": "xxxxxxxxxxxxxx", 
+"dateExpiration": "2024-12-09T23:59:59 ", 
+" linkCarteBrune ": "https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+
+Description API Assurance Digitale A.A.S V.1.0 
+46 
+ 
+ 
+ 
+ 
+ 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4006 
+ERROR 
+Merci de renseigner une ResponsabilitÚ civile valide 
+4007 
+ERROR 
+Merci de renseigner un genre valide 
+4008 
+ERROR 
+Merci de renseigner une Únergie valide 
+4010 
+ERROR 
+Votre stock de Qr est ÚpuisÚ. Merci de passer votre commande 
+de QR 
+5006 
+ERROR 
+La rÚfÚrence nÆest pas unique. Merci de renseigner une 
+rÚfÚrence valide 
+
+Description API Assurance Digitale A.A.S V.1.0 
+47 
+ 
+ 
+ 
+ 
+8 APIs de Gestion des Bus Ecole 
+Cette section dÚcrit les diffÚrents API pour la gestion/production des attestations digitales 
+automobiles pour les Bus Ecole. 
+ 
+Le tableau suivant liste les diffÚrentes API de gestion des attestations Bus Ecole et leur 
+description : 
+Nom 
+Description 
+bus.ecole.rc 
+Permet dÆobtenir le montant de la prime RC selon les 
+caractÚristiques du vÚhicule et de la durÚe 
+Bus.ecole.request 
+Permet de gÚnÚrer un QR Code et une attestation 
+automobile digitale Bus Ecole 
+ 
+ 
+8.1 API de calcul de la RC dÆune attestation Bus (bus.ecole.rc) 
+Cette API permet dÆobtenir le montant de la prime RC dÆun bus Úcole selon les caractÚristiques du 
+vÚhicule et de la durÚe. 
+MÚthode : POST 
+URL:{URL}/api/v1/{partner}/bus.ecole.rc  
+Body: 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Exemple de request: 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Nom 
+Obligatoire 
+Type 
+Description 
+puissanceFiscale 
+X 
+Integer 
+Puissance fiscale du vÚhicule 
+duree 
+X 
+Integer 
+DurÚe de la souscription en mois ou 
+en jour 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR 
+genre 
+X 
+String 
+Genre du vÚhicule : BE-VTA ou BE- 
+VTCATP 
+energie 
+X 
+String 
+Type dÆÚnergie (ESSENCE ou 
+DIESEL) 
+nombrePlace 
+X 
+Integer 
+Nombre de place du bus 
+
+Description API Assurance Digitale A.A.S V.1.0 
+48 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+BigDecimal 
+Code de retour de la requÛte 
+operationStatus 
+String 
+Statut de la requÛte : SUCCESS ou 
+ERROR 
+operationMessage 
+String 
+Message liÚ au statut de la requÛte 
+data 
+BigDecimal 
+Prime Net RC 
+Exemple de Response: 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4007 
+ERROR 
+Merci de renseigner une durÚe valide 
+Body: 
+{ 
+"duree": 6, 
+"energie": "ESSENCE", 
+"periodicite":"MOIS", 
+"genre": "BE-VTA", 
+"nombrePlace": 30, 
+"puissanceFiscale": 20 
+} 
+{ 
+"code": 2000 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": 391193 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+49 
+ 
+ 
+ 
+ 
+8.2 API de gÚnÚration dÆune attestation Bus Ecole (bus.ecole.rc-
+qrcode- request) 
+Cet API permet de gÚnÚrer un QR Code et une attestation automobile digitale pour un bus Úcole. 
+Le QR Code gÚnÚrÚ sera dÚduit du stock de ½ QR code virtuel ╗ de la compagnie. 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/bus.ecole.request    
+Request Body : 
+Nom 
+Obligatoire 
+Type 
+Description 
+responsabiliteCivile 
+X 
+BigDecimal 
+Montant ResponsabilitÚ civile 
+calculÚ pour le vÚhicule 
+dateEffet 
+X 
+String 
+Date effet de lÆattestation 
+Format : AAAA-MM-JJ 
+dateExpiration 
+X 
+String 
+Date expiration de lÆattestation 
+Format : AAAA-MM-JJ 
+duree 
+X 
+String 
+DurÚe souscription en mois ou 
+jour. Voir tableau des valeurs 
+attendues 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR. 
+Voir tableau des valeurs 
+attendues 
+police 
+X 
+String 
+NumÚro de la police dÆassurance 
+du contrat. 
+referenceTrxPartner 
+X 
+String 
+RÚfÚrence interne de la 
+transaction au niveau de la 
+compagnie 
+vehivule 
+Object 
+immatriculation 
+X 
+String 
+Plaque dÆImmatriculation du 
+vÚhicule 
+genre 
+X 
+String 
+Genre du vÚhicule : BE-VTA ou 
+BE-VTCATP 
+Voir tableau des valeurs 
+attendues pour le genre 
+modele 
+X 
+String 
+ModÞle du vÚhicule 
+marque 
+X 
+String 
+Marque du vÚhicule 
+nombrePlace 
+X 
+Int 
+Nombre de place du vÚhicule 
+
+Description API Assurance Digitale A.A.S V.1.0 
+50 
+ 
+ 
+ 
+ 
+ 
+puissanceFiscale 
+X 
+Int 
+Puissance fiscale du vÚhicule 
+dateMiseCirculation 
+X 
+String 
+Date mise en circulation 
+Format : AAAA-MM-JJ 
+energie 
+X 
+String 
+Type dÆÚnergie (ESSENCE ou 
+DIESEL) 
+valeureNeuve 
+X 
+BigDecimal 
+Valeur vÚnale du vÚhicule 
+valeurActuelle 
+X 
+BigDecimal 
+Valeur actuelle du vÚhicule 
+chassis 
+X 
+String 
+NumÚro de chÔssis du vÚhicule. 
+Obligatoire si pas de plaque 
+dÆimmatriculation. 
+souscripteur 
+X 
+Objet 
+Informations sur le souscripteurs 
+du contrat 
+nom 
+X 
+String 
+Nom du souscripteur 
+prenom 
+X 
+String 
+PrÚnom du souscripteur 
+cellulaire 
+String 
+Cellulaire du souscripteur 
+email 
+String 
+Email du souscripteur 
+assure 
+X 
+Objet 
+Informations sur le bÚnÚficiaire 
+du contrat 
+nom 
+X 
+String 
+Nom du bÚnÚficiaire 
+prenom 
+X 
+String 
+PrÚnom du bÚnÚficiaire 
+cellulaire 
+String 
+Cellulaire du bÚnÚficiaire 
+email 
+String 
+Email du bÚnÚficiaire 
+ 
+ 
+Exemple de request : 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body: 
+{ 
+"responsabiliteCivile":391193, 
+"dateEffet":"2024-10-01", 
+"dateExpiration":"2025-04-30", 
+"police":"123456789BUS", 
+"duree":6, 
+"periodicite": "MOIS", 
+
+Description API Assurance Digitale A.A.S V.1.0 
+51 
+ 
+ 
+ 
+ 
+ 
+ 
+"referenceTrxPartner":"12345678909876543BUS", 
+"souscripteur":{ 
+"nom":"FALL", 
+"prenom":"MODOU", 
+"cellulaire":"771234578", 
+"email":"modou.fall@test.com" 
+}, 
+"assure":{ 
+"nom":"FALL", 
+"prenom":"MODOU", 
+"cellulaire":"771234578", 
+"email":"modou.fall@test.com" 
+}, 
+"vehicule":{ 
+"puissanceFiscale":20, 
+"dateMiseCirculation":"1999-11-08", 
+"nombrePlace":30, 
+"valeurNeuve":45000000.00, 
+"valeurActuelle":35000000.00, 
+"immatriculation":"DK-9807-BS", 
+"energie":"ESSENCE", 
+"genre":"VP", 
+"modele":"MERCEDES", 
+"marque":"BUSSY", 
+"chassis":"1234567890OIUYTREZQSDF" 
+} 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+52 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+Int 
+Code retour 
+status 
+String 
+Statut de la requÛte : SUCCESS ou ERROR 
+message 
+String 
+Message liÚ au statut de la requÛte 
+data 
+Objet 
+referenceExterne 
+String 
+RÚfÚrence interne de la transaction au niveau de 
+la compagnie 
+attestationNumber 
+String 
+NumÚro de lÆattestation 
+linkAttestation 
+String 
+Lien URL vers lÆattestation digitale 
+secureKey 
+String 
+A ignorer 
+dateExpiration 
+String 
+Date dÆexpiration de lÆattestation calculÚe 
+automatiquement Ó partir de la date dÆeffet et de 
+la durÚe 
+Format: AAAA-MM-JJ-HH-MM-SS 
+linkCarteBrune 
+String 
+Lien URL vers lÆattestation carte brune 
+Exemple de response: 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+{ 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": { 
+"referenceExterne": "12345678909876543BUS", 
+"linkAttestation": 
+"https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+"attestationNumber": " SN00JXXXXXX ", 
+"secureKey": "xxxxxxxxxxxxxx", 
+"dateExpiration": "2025-03-31T23:59:59 " 
+" linkCarteBrune ": "https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+53 
+ 
+ 
+ 
+ 
+ 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4006 
+ERROR 
+Merci de renseigner une ResponsabilitÚ civile valide 
+4007 
+ERROR 
+Merci de renseigner un genre valide 
+4008 
+ERROR 
+Merci de renseigner une Únergie valide 
+4010 
+ERROR 
+Votre stock de Qr est ÚpuisÚ. Merci de passer votre commande 
+de QR 
+5006 
+ERROR 
+La rÚfÚrence nÆest pas unique. Merci de renseigner une 
+rÚfÚrence valide 
+
+Description API Assurance Digitale A.A.S V.1.0 
+54 
+ 
+ 
+ 
+10APIs de Gestion des vÚhicules ½ Garage ╗ 
+Cette section dÚcrit les diffÚrents API pour la gestion/production des attestations digitales 
+automobiles pour les Garagistes et Professionnels de lÆautomobile (C6-Garages). 
+ 
+Le tableau suivant liste les diffÚrentes API de gestion des attestations ½ Garage ╗ et leur 
+description : 
+Nom 
+Description 
+rc.garage 
+Permet dÆobtenir le montant de la prime RC selon le 
+nombre de cartes et de la durÚe 
+garage.request 
+Permet de gÚnÚrer un QR Code et une attestation 
+automobile digitale des vÚhicules ½ Garage ╗ 
+ 
+ 
+10.1 API de calcul de la RC dÆune attestation Garage (garage) 
+Cette API permet dÆobtenir le montant de la prime RC des vÚhicules Garare selon le nombre de 
+cartes et de la durÚe. 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/rc.garage 
+Body: 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Exemple de request: 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body: 
+{ 
+"duree": 6, 
+Nom 
+Obligatoire 
+Type 
+Description 
+duree 
+X 
+Integer 
+DurÚe de la souscription en mois ou 
+en jour 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR 
+genre 
+X 
+String 
+Genre du vÚhicule : C6-WG-4R ou C6- 
+WG-ATELIER-AUTRE 
+nombreCarte 
+X 
+Integer 
+Nombre de cartes 
+
+Description API Assurance Digitale A.A.S V.1.0 
+55 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+BigDecimal 
+Code de retour de la requÛte 
+operationStatus 
+String 
+Statut de la requÛte : SUCCESS ou 
+ERROR 
+operationMessage 
+String 
+Message liÚ au statut de la requÛte 
+data 
+BigDecimal 
+Prime Net RC 
+Exemple de Response: 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4007 
+ERROR 
+Merci de renseigner une durÚe valide 
+"periodicite":"MOIS", 
+"genre": "C6-WG-4R", 
+"nombreCarte": 1 
+} 
+{ 
+"code": 2000 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": 237675 
+} 
+
+Description API Assurance Digitale A.A.S V.1.0 
+56 
+ 
+ 
+ 
+ 
+10.2 API de gÚnÚration dÆune attestation Garage (garage.request) 
+Cet API permet de gÚnÚrer un QR Code et une attestation automobile digitale pour des vÚhicules 
+½ Garages ╗. Le QR Code gÚnÚrÚ sera dÚduit du stock de ½ QR code virtuel ╗ de la compagnie. 
+MÚthode : POST 
+URL: {URL}/api/v1/{partner}/garage.request  
+Request Body : 
+Nom 
+Obligatoire 
+Type 
+Description 
+responsabiliteCivile 
+X 
+BigDecimal 
+Montant ResponsabilitÚ civile 
+calculÚ selon le nombre de cartes 
+dateEffet 
+X 
+String 
+Date effet de lÆattestation 
+Format : AAAA-MM-JJ 
+dateExpiration 
+X 
+String 
+Date expiration de lÆattestation 
+Format : AAAA-MM-JJ 
+duree 
+X 
+String 
+DurÚe souscription en mois ou 
+jour. Voir tableau des valeurs 
+attendues 
+periodicite 
+X 
+String 
+Type de pÚriode MOIS ou JOUR. 
+Voir tableau des valeurs 
+attendues 
+genre 
+X 
+String 
+Genre de la soucription: C6-WG- 
+4R ou C6-WG-ATELIER-AUTRE 
+nombreCarte 
+X 
+Int 
+Nombre de cartes 
+immatriculation 
+X 
+String 
+Immatriculation commune 
+police 
+X 
+String 
+NumÚro de la police dÆassurance 
+du contrat. 
+referenceTrxPartner 
+X 
+String 
+RÚfÚrence interne de la 
+transaction au niveau de la 
+compagnie 
+souscripteur 
+X 
+Objet 
+Informations sur le souscripteur 
+du contrat 
+nom 
+X 
+String 
+Nom du souscripteur 
+prenom 
+X 
+String 
+PrÚnom du souscripteur 
+cellulaire 
+String 
+Cellulaire du souscripteur 
+email 
+String 
+Email du souscripteur 
+
+Description API Assurance Digitale A.A.S V.1.0 
+57 
+ 
+ 
+ 
+ 
+ 
+assure 
+X 
+Objet 
+Informations sur le bÚnÚficiaire 
+du contrat 
+nom 
+X 
+String 
+Nom du bÚnÚficiaire 
+prenom 
+X 
+String 
+PrÚnom du bÚnÚficiaire 
+cellulaire 
+String 
+Cellulaire du bÚnÚficiaire 
+email 
+String 
+Email du bÚnÚficiaire 
+ 
+ 
+Exemple de request : 
+ 
+Headers : 
+Authorization : {{Basic}} <username:password> 
+Body: 
+{ 
+"responsabiliteCivile": 237675, 
+"dateEffet":"2024-10-01", 
+"dateExpiration":"2025-03-31", 
+"police":"123456789Garage", 
+"duree":6, 
+"periodicite": "MOIS", 
+"referenceTrxPartner":"12345678909876543Garage", 
+"nombreCarte":1, 
+"immatriculation": "C6-111-WG", 
+"genre":"C6-WG-4R", 
+"souscripteur":{ 
+"nom":"FALL", 
+"prenom":"MODOU", 
+"cellulaire":"771234578", 
+"email":"modou.fall@test.com" 
+}, 
+"assure":{ 
+"nom":"FALL", 
+"prenom":"MODOU", 
+
+Description API Assurance Digitale A.A.S V.1.0 
+58 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Response : 
+Nom 
+Type 
+Description 
+code 
+Int 
+Code retour 
+status 
+String 
+Statut de la requÛte : SUCCESS ou ERROR 
+message 
+String 
+Message liÚ au statut de la requÛte 
+data 
+Objet 
+referenceExterne 
+String 
+RÚfÚrence interne de la transaction au niveau de 
+la compagnie 
+attestationNumber 
+String 
+NumÚro de lÆattestation 
+linkAttestation 
+String 
+Lien URL vers lÆattestation digitale 
+secureKey 
+String 
+A ignorer 
+dateExpiration 
+String 
+Date dÆexpiration de lÆattestation calculÚe 
+automatiquement Ó partir de la date dÆeffet et de 
+la durÚe 
+Format: AAAA-MM-JJ-HH-MM-SS 
+linkCarteBrune 
+String 
+Lien URL vers lÆattestation carte brune 
+Exemple de response: 
+ 
+"cellulaire":"771234578", 
+"email":"modou.fall@test.com" 
+} 
+} 
+{ 
+"operationStatus": "SUCCESS", 
+"operationMessage": "OpÚration effectuÚe avec succÞs.", 
+"data": { 
+"referenceExterne": "12345678909876543Garage", 
+"linkAttestation": 
+"https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+"attestationNumber": " SN00JXXXXXX ", 
+"secureKey": "xxxxxxxxxxxxxx", 
+
+Description API Assurance Digitale A.A.S V.1.0 
+59 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Codes dÆerreurs : 
+ 
+Code 
+Type 
+Message 
+2000 
+SUCCESS 
+OpÚration effectuÚe avec succÞs 
+4006 
+ERROR 
+Merci de renseigner une ResponsabilitÚ civile valide 
+4007 
+ERROR 
+Merci de renseigner un genre valide 
+4008 
+ERROR 
+Merci de renseigner une Únergie valide 
+4010 
+ERROR 
+Votre stock de Qr est ÚpuisÚ. Merci de passer votre commande 
+de QR 
+5006 
+ERROR 
+La rÚfÚrence nÆest pas unique. Merci de renseigner une 
+rÚfÚrence valide 
+ 
+ 
+" linkCarteBrune ": "https://A.A.S.diotali.com/#/attestation/SN00JXXXXXX", 
+} 
+} 
+

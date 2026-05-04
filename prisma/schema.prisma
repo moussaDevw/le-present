@@ -6,14 +6,13 @@ datasource db {
   provider = "postgresql"
 }
 
-//////////////////////
+// ============================================================
 // ENUMS
-//////////////////////
+// ============================================================
 
 enum RoleName {
   DRIVER
   TRANSPORTER
-  REFERRER
   ADMIN
 }
 
@@ -21,6 +20,7 @@ enum InsuranceStatus {
   PENDING
   PAID
   ACTIVE
+  SUSPENDED
   EXPIRED
   CANCELLED
 }
@@ -29,6 +29,7 @@ enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
+  REFUNDED
 }
 
 enum PaymentProvider {
@@ -37,290 +38,705 @@ enum PaymentProvider {
   FREE
 }
 
+enum InvoiceStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  CANCELLED
+}
+
 enum PartyType {
   ASSURE
   SOUSCRIPTEUR
 }
 
-//////////////////////
+// [FIX #4] Remplace String @default("PHYSIQUE") — valeurs AAS strictement typées
+enum PersonType {
+  PHYSIQUE
+  MORALE
+}
+
+// Aligné sur l'API AAS : periodicite = MOIS ou JOUR
+// Pour les autres compagnies : ajouter les valeurs ici
+// et gérer le mapping dans la couche service
+enum Periodicity {
+  JOUR
+  MOIS
+}
+
+enum DocumentType {
+  ATTESTATION
+  RECEIPT
+  GREEN_CARD // Carte brune (linkCarteBrune AAS)
+  CONDITIONS_GENERALES
+  AVENANT
+}
+
+// Aligné sur l'API AAS : ESSENCE ou DIESEL
+// Extensible pour les véhicules électriques
+enum EnergyType {
+  ESSENCE
+  DIESEL
+  ELECTRIQUE
+  HYBRIDE
+}
+
+// Usage du véhicule — obligatoire pour catégorie C5 (deux roues)
+// AAS : commerciale | non_commerciale — mappé en service
+enum VehicleUsage {
+  COMMERCIAL
+  NON_COMMERCIAL
+}
+
+// Catégories de produits d'assurance
+// Correspond aux sections de l'API AAS
+enum ProductCategory {
+  MONO // Attestation véhicule standard
+  MOTO // Deux roues C5
+  FLOTTE // Flotte de véhicules
+  BUS_ECOLE // Bus scolaire
+  REMORQUE // Remorque
+  GARAGE // Garagiste / professionnel C6
+  AUTO_ECOLE // Auto-école C7
+  LOCATION // Location sans chauffeur C8
+}
+
+// Type d'authentification par compagnie partenaire
+enum AuthType {
+  BASIC // HTTP Basic Auth (username:password) — AAS
+  API_KEY // Clé API dans le header
+  OAUTH2 // OAuth2 Bearer Token
+  JWT // JWT statique
+}
+
+// Motif d'invalidation d'une attestation
+// Correspond aux valeurs methode de l'API AAS qrcode.mono.cancel
+enum CancellationMethod {
+  ANNULER
+  RESILIER
+  SUSPENDRE
+}
+
+// ============================================================
 // USERS & ROLES
-//////////////////////
+// ============================================================
 
 model User {
-  id          Int       @id @default(autoincrement())
-  firstName   String
-  lastName    String
-  phone       String    @unique
-  email       String?   @unique
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        Int       @id @default(autoincrement())
+  firstName String
+  lastName  String
+  phone     String    @unique
+  email     String?   @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-  roles       UserRole[]
-  vehicles    Vehicle[]
-  insurances  Insurance[]
-  quotes      InsuranceQuote[]
-  fleets      Fleet[]
-  referrals   ReferralCode[]
+  roles         UserRole[]
+  vehicles      Vehicle[]
+  insurances    Insurance[]
+  quotes        InsuranceQuote[]
+  fleets        Fleet[]
+  invoices      Invoice[]
+  parties       InsuranceParty[]
+  refreshTokens RefreshToken[]
+
+  // [FIX #5] Relations inverses pour les FK changedBy et requestedBy
+  statusLogs    InsuranceStatusLog[]    @relation("StatusLogChangedBy")
+  cancellations InsuranceCancellation[] @relation("CancellationRequestedBy")
+
+  @@index([phone])
+  @@index([deletedAt])
 }
 
 model Role {
-  id    Int      @id @default(autoincrement())
-  name  RoleName @unique
+  id   Int      @id @default(autoincrement())
+  name RoleName @unique
 
   users UserRole[]
 }
 
 model UserRole {
-  id      Int  @id @default(autoincrement())
-  userId  Int
-  roleId  Int
+  id     Int @id @default(autoincrement())
+  userId Int
+  roleId Int
 
-  user    User @relation(fields: [userId], references: [id])
-  role    Role @relation(fields: [roleId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roleId])
 }
 
-//////////////////////
-// VEHICLES
-//////////////////////
+// ============================================================
+// AUTHENTIFICATION
+// ============================================================
 
-model Vehicle {
-  id               Int      @id @default(autoincrement())
-  ownerId          Int
-  licensePlate     String   @unique
-  brand            String?
-  model            String?
-  type             String?
-  energy           String?
-  fiscalPower      Int?
-  numberOfSeats    Int?
-  chassis          String?
-  circulationDate  DateTime?
-  valueNew         Float?
-  valueCurrent     Float?
-  createdAt        DateTime @default(now())
+// IMPORTANT : codeHash stocke le hash argon2/bcrypt du code OTP.
+// Ne jamais stocker le code en clair.
+// Vérification : argon2.verify(codeHash, inputCode)
+model OtpCode {
+  id        Int      @id @default(autoincrement())
+  phone     String
+  codeHash  String // Hash du code OTP — jamais en clair
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  owner       User        @relation(fields: [ownerId], references: [id])
-  insurances  Insurance[]
-  quotes      InsuranceQuote[]
-  fleetLinks  FleetVehicle[]
+  @@index([phone, isUsed])
 }
 
-//////////////////////
-// INSURANCE CORE
-//////////////////////
+// Gestion des sessions — refresh tokens révocables individuellement
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tokenHash String   @unique // Hash du token — jamais en clair
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRevoked])
+}
+
+// ============================================================
+// RÉFÉRENTIEL GENRES DE VÉHICULE
+// Table (pas enum) : extensible par compagnie partenaire
+// ============================================================
+
+// Catégorie réglementaire (C1, C2, C5, C6, BUS_ECOLE, REMORQUE...)
+model VehicleCategory {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique // C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, BUS_ECOLE, REMORQUE
+  label       String
+  description String?
+  isActive    Boolean @default(true)
+
+  genres VehicleGenre[]
+}
+
+// Genre précis (VP, TPC, 2RCYC, 2RSCO, BE-VTA, C6-WG-4R...)
+// Source : tableau des genres API AAS — extensible pour autres compagnies
+model VehicleGenre {
+  id               Int     @id @default(autoincrement())
+  categoryId       Int
+  code             String  @unique // VP, TPC, 2RCYC, 2RSCO, BE-VTA, C6-WG-4R...
+  label            String
+  requiresCylinder Boolean @default(false) // true pour les motos C5
+  requiresUsage    Boolean @default(false) // true pour C5 (COMMERCIAL/NON_COMMERCIAL)
+  requiresNbCartes Boolean @default(false) // true pour C6 Garage
+  isActive         Boolean @default(true)
+
+  category VehicleCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  vehicles Vehicle[]
+
+  @@index([categoryId])
+}
+
+// ============================================================
+// VÉHICULES
+// ============================================================
+
+// [FIX #8] licensePlate est optionnel (véhicule neuf = pas de plaque).
+// Unicité conditionnelle à enforcer via index partiel PostgreSQL
+// (en dehors de Prisma, dans une migration SQL manuelle) :
+//
+//   CREATE UNIQUE INDEX vehicle_license_plate_unique
+//   ON "Vehicle"("licensePlate")
+//   WHERE "licensePlate" IS NOT NULL AND "deletedAt" IS NULL;
+//
+// ET côté applicatif avant INSERT :
+//   vérifier qu'aucun véhicule actif n'a déjà cette plaque
+model Vehicle {
+  id         Int        @id @default(autoincrement())
+  ownerId    Int
+  genreId    Int
+  energyType EnergyType
+
+  licensePlate   String? // Optionnel si véhicule neuf (chassis obligatoire alors)
+  chassis        String? // Obligatoire si pas de plaque — validé en applicatif
+  brand          String?
+  model          String?
+  fiscalPower    Int?
+  numberOfSeats  Int?
+  cylinderVolume Int? // En cm³ — obligatoire pour catégorie C5 (motos)
+  usage          VehicleUsage? // Obligatoire pour C5 deux roues
+
+  circulationDate DateTime?
+  valueNew        Decimal?  @db.Decimal(15, 2)
+  valueCurrent    Decimal?  @db.Decimal(15, 2)
+
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  owner      User             @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  genre      VehicleGenre     @relation(fields: [genreId], references: [id], onDelete: Restrict)
+  insurances Insurance[]
+  quotes     InsuranceQuote[]
+  fleetLinks FleetVehicle[]
+
+  @@index([ownerId])
+  @@index([licensePlate])
+  @@index([genreId])
+  @@index([deletedAt])
+}
+
+// ============================================================
+// COMPAGNIES D'ASSURANCE
+// ============================================================
 
 model InsuranceCompany {
-  id          Int      @id @default(autoincrement())
-  name        String
-  apiBaseUrl  String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id         Int       @id @default(autoincrement())
+  name       String
+  code       String    @unique // Code court interne (ex: AAS, NSIA, ALLIANZ)
+  apiBaseUrl String?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   products    InsuranceProduct[]
   quotes      InsuranceQuote[]
   insurances  Insurance[]
+  credentials InsuranceCompanyCredential[]
+  qrStock     CompanyQrStock?
+
+  @@index([deletedAt])
 }
 
-model InsuranceProduct {
+// Credentials d'authentification par compagnie
+// Séparés pour ne jamais exposer les secrets dans InsuranceCompany
+// IMPORTANT : chiffrer encryptedPayload avec AES-256 avant INSERT
+model InsuranceCompanyCredential {
   id          Int      @id @default(autoincrement())
+  companyId   Int
+  partnerCode String // Le {partner} dans les URLs AAS
+  authType    AuthType
+
+  // Payload chiffré selon authType :
+  // BASIC   → { username, password }
+  // API_KEY → { headerName, apiKey }
+  // OAUTH2  → { clientId, clientSecret, tokenUrl, scope }
+  // JWT     → { token }
+  encryptedPayload String
+
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime?
+
+  company InsuranceCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, partnerCode])
+  @@index([companyId, isActive])
+}
+
+// Stock de QR codes virtuels par compagnie
+// Synchronisé via l'API stock.qr de AAS
+// Décrémenté à chaque génération d'attestation
+// Alerte déclenchée quand balance <= lowThreshold
+model CompanyQrStock {
+  id           Int      @id @default(autoincrement())
+  companyId    Int      @unique
+  balance      Int      @default(0)
+  lowThreshold Int      @default(10)
+  lastSyncedAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company InsuranceCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// PRODUITS D'ASSURANCE
+// ============================================================
+
+model InsuranceProduct {
+  id          Int             @id @default(autoincrement())
   companyId   Int
   code        String
   name        String
-  category    String
+  category    ProductCategory
+  description String?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt // [FIX #7]
+  deletedAt   DateTime?
 
-  company     InsuranceCompany @relation(fields: [companyId], references: [id])
-  quotes      InsuranceQuote[]
-  insurances  Insurance[]
+  company    InsuranceCompany @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  quotes     InsuranceQuote[]
+  insurances Insurance[]
+
+  @@unique([companyId, code])
+  @@index([companyId, category, isActive])
 }
 
-//////////////////////
-// QUOTES
-//////////////////////
+// ============================================================
+// DEVIS (QUOTES)
+// ============================================================
 
 model InsuranceQuote {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  vehicleId     Int
-  companyId     Int
-  productId     Int
+  id        Int  @id @default(autoincrement())
+  userId    Int
+  vehicleId Int
+  companyId Int
+  productId Int
+  fleetId   Int? // [FIX #1] Groupe les devis d'une simulation flotte
 
-  duration      Int
-  periodicity   String
-  price         Float
+  duration    Int
+  periodicity Periodicity
+  price       Decimal     @db.Decimal(15, 2)
+  expiresAt   DateTime?
 
-  rawRequest    Json?
-  rawResponse   Json?
+  // [FIX #9] requestId AAS pour les devis flotte (rc.flotte.request)
+  // Envoyé dans items[].requestId — retourné dans items[].requestId de la réponse
+  externalRequestId String?
 
-  createdAt     DateTime @default(now())
+  rawRequest  Json?
+  rawResponse Json?
 
-  user      User              @relation(fields: [userId], references: [id])
-  vehicle   Vehicle           @relation(fields: [vehicleId], references: [id])
-  company   InsuranceCompany  @relation(fields: [companyId], references: [id])
-  product   InsuranceProduct  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  vehicle   Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  company   InsuranceCompany @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  product   InsuranceProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  fleet     Fleet?           @relation(fields: [fleetId], references: [id], onDelete: SetNull)
+  insurance Insurance?
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([vehicleId])
+  @@index([companyId])
+  @@index([fleetId]) // [FIX #1]
+  @@index([createdAt])
 }
 
-//////////////////////
-// INSURANCES
-//////////////////////
+// ============================================================
+// POLICES D'ASSURANCE
+// ============================================================
 
 model Insurance {
-  id                     Int      @id @default(autoincrement())
-  userId                 Int
-  vehicleId              Int
-  companyId              Int
-  productId              Int
+  id        Int  @id @default(autoincrement())
+  userId    Int
+  vehicleId Int
+  companyId Int
+  productId Int
+  quoteId   Int? @unique // Lien vers le devis d'origine
+  fleetId   Int? // [FIX #1] Regroupe les polices d'une même flotte
 
-  policyNumber           String   @unique
-  referencePartner       String   @unique
+  // Références de la police
+  policyNumber       String @unique // Numéro de police AAS (attestationNumber)
+  externalPartnerRef String @unique // referenceTrxPartner AAS
+  // Clé d'idempotence pour annulation/résiliation/suspension
 
-  duration               Int
-  periodicity            String
-  responsibilityCivil    Float?
+  // [FIX #3] Référence du véhicule tracteur pour les remorques
+  // Pointe vers Insurance.externalPartnerRef du véhicule tracteur
+  // Correspond au champ referenceVehicule de l'API AAS
+  towingVehicleRef String?
 
-  status                 InsuranceStatus
+  duration                  Int
+  periodicity               Periodicity
+  responsibilityCivilAmount Decimal?    @db.Decimal(15, 2)
 
-  startDate              DateTime
-  endDate                DateTime
+  status    InsuranceStatus
+  startDate DateTime
+  endDate   DateTime
 
-  createdAt              DateTime @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-  user        User               @relation(fields: [userId], references: [id])
-  vehicle     Vehicle            @relation(fields: [vehicleId], references: [id])
-  company     InsuranceCompany   @relation(fields: [companyId], references: [id])
-  product     InsuranceProduct   @relation(fields: [productId], references: [id])
+  user    User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  vehicle Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  company InsuranceCompany @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  product InsuranceProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quote   InsuranceQuote?  @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  fleet   Fleet?           @relation(fields: [fleetId], references: [id], onDelete: SetNull)
 
-  details     InsuranceDetail?
-  payments    Payment[]
-  parties     InsuranceParty[]
-  documents   InsuranceDocument[]
-  logs        InsuranceStatusLog[]
+  detail        InsuranceDetail?
+  parties       InsuranceParty[]
+  guarantees    InsuranceGuarantee[]
+  documents     InsuranceDocument[]
+  logs          InsuranceStatusLog[]
+  cancellations InsuranceCancellation[]
+  invoiceItems  InvoiceItem[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([companyId, status])
+  @@index([fleetId]) // [FIX #1]
+  @@index([startDate])
+  @@index([endDate])
+  @@index([deletedAt])
 }
 
+// Détails complémentaires de la police
+// Snapshots + URLs documents + données spécifiques par type de produit
 model InsuranceDetail {
-  id                Int   @id @default(autoincrement())
-  insuranceId       Int   @unique
+  id          Int @id @default(autoincrement())
+  insuranceId Int @unique
 
-  assureData        Json?
-  souscripteurData  Json?
-  vehicleData       Json?
-  garanties         Json?
-  rawPayload        Json?
+  // Snapshots au moment de la souscription
+  assureSnapshot       Json?
+  souscripteurSnapshot Json?
+  vehicleSnapshot      Json?
 
-  insurance         Insurance @relation(fields: [insuranceId], references: [id])
+  // [FIX #2] Nombre de cartes pour Garage C6
+  // Champ nombreCarte de l'API AAS rc.garage / garage.request
+  nombreCarte Int?
+
+  // Retourné par l'API AAS à la génération de l'attestation
+  attestationNumber String?
+  linkAttestation   String?
+  linkCarteBrune    String?
+
+  rawRequest  Json?
+  rawResponse Json?
+
+  insurance Insurance @relation(fields: [insuranceId], references: [id], onDelete: Cascade)
 }
 
+// Référentiel des garanties disponibles (codes AAS 1 à 8)
+model Guarantee {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // "1", "2"... "8"
+  label       String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  insuranceGuarantees InsuranceGuarantee[]
+}
+
+// Garanties souscrites — remplace le blob JSON garanties de la v1.0
+// Codes 1 à 8 selon l'API AAS, extensible pour d'autres compagnies
+model InsuranceGuarantee {
+  id          Int      @id @default(autoincrement())
+  insuranceId Int
+  guaranteeId Int?
+  code        String // "1"=défense&recours "2"=pers.transportées ... "8"=tierce complète
+  label       String
+  amount      Decimal? @db.Decimal(15, 2)
+
+  insurance Insurance  @relation(fields: [insuranceId], references: [id], onDelete: Cascade)
+  guarantee Guarantee? @relation(fields: [guaranteeId], references: [id], onDelete: SetNull)
+
+  @@unique([insuranceId, code])
+}
+
+// Audit trail des changements de statut — log immuable
 model InsuranceStatusLog {
-  id            Int      @id @default(autoincrement())
-  insuranceId   Int
-  status        InsuranceStatus
-  changedAt     DateTime @default(now())
+  id          Int              @id @default(autoincrement())
+  insuranceId Int
+  fromStatus  InsuranceStatus?
+  toStatus    InsuranceStatus
+  reason      String?
 
-  insurance     Insurance @relation(fields: [insuranceId], references: [id])
+  // [FIX #5] [FIX #6] FK déclarée + nullable (null = changement automatique)
+  changedBy Int?
+  changedAt DateTime @default(now())
+
+  insurance     Insurance @relation(fields: [insuranceId], references: [id], onDelete: Cascade)
+  changedByUser User?     @relation("StatusLogChangedBy", fields: [changedBy], references: [id], onDelete: SetNull)
+
+  @@index([insuranceId])
+  @@index([changedAt])
 }
 
-//////////////////////
-// PARTIES
-//////////////////////
+// Annulations / résiliations / suspensions
+// Correspond à l'API AAS qrcode.mono.cancel
+model InsuranceCancellation {
+  id          Int                @id @default(autoincrement())
+  insuranceId Int
+  method      CancellationMethod // ANNULER | RESILIER | SUSPENDRE
+  motif       String?
+
+  // [FIX #5] [FIX #6] FK déclarée + nullable (null = déclenchement automatique)
+  requestedBy Int?
+  requestedAt DateTime @default(now())
+
+  apiStatus      String?
+  apiMessage     String?
+  apiRawResponse Json?
+
+  insurance Insurance @relation(fields: [insuranceId], references: [id], onDelete: Cascade)
+  requester User?     @relation("CancellationRequestedBy", fields: [requestedBy], references: [id], onDelete: SetNull)
+
+  @@index([insuranceId])
+  @@index([requestedAt])
+}
+
+// ============================================================
+// PARTIES AU CONTRAT
+// ============================================================
 
 model InsuranceParty {
-  id            Int       @id @default(autoincrement())
-  insuranceId   Int
+  id          Int  @id @default(autoincrement())
+  insuranceId Int
+  userId      Int?
 
-  type          PartyType
+  type       PartyType
+  personType PersonType @default(PHYSIQUE) // [FIX #4] Enum au lieu de String
 
-  firstName     String
-  lastName      String
-  phone         String?
-  email         String?
+  firstName String
+  lastName  String
+  phone     String?
+  email     String?
 
-  insurance     Insurance @relation(fields: [insuranceId], references: [id])
+  insurance Insurance @relation(fields: [insuranceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([insuranceId, type])
+  @@index([insuranceId])
+  @@index([userId])
+  @@index([phone])
 }
 
-//////////////////////
-// PAYMENTS
-//////////////////////
+// ============================================================
+// FACTURES & PAIEMENTS
+// ============================================================
+
+model Invoice {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  reference String        @unique
+  status    InvoiceStatus @default(PENDING)
+
+  subtotal  Decimal @db.Decimal(15, 2)
+  taxAmount Decimal @default(0) @db.Decimal(15, 2)
+  total     Decimal @db.Decimal(15, 2)
+
+  dueAt     DateTime?
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items    InvoiceItem[]
+  payments Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Ligne de facture — une ligne par police
+// Permet la facturation groupée (flottes) et les avenants
+model InvoiceItem {
+  id          Int     @id @default(autoincrement())
+  invoiceId   Int
+  insuranceId Int
+  label       String
+  amount      Decimal @db.Decimal(15, 2)
+
+  invoice   Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  insurance Insurance @relation(fields: [insuranceId], references: [id], onDelete: Restrict)
+
+  @@unique([invoiceId, insuranceId])
+  @@index([insuranceId])
+}
 
 model Payment {
-  id                     Int      @id @default(autoincrement())
-  insuranceId            Int
+  id        Int @id @default(autoincrement())
+  invoiceId Int
 
-  amount                 Float
-  provider               PaymentProvider
-  status                 PaymentStatus
+  amount   Decimal         @db.Decimal(15, 2)
+  provider PaymentProvider
+  status   PaymentStatus
 
-  externalTransactionId  String   @unique
+  // @unique = idempotence garantie — pas de double encaissement possible
+  externalTransactionId String @unique
 
-  createdAt              DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  insurance              Insurance @relation(fields: [insuranceId], references: [id])
-  events                 PaymentEvent[]
+  invoice Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  events  PaymentEvent[]
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([createdAt])
 }
 
+// Log immuable des événements webhook paiement
 model PaymentEvent {
-  id          Int      @id @default(autoincrement())
-  paymentId   Int
-  eventType   String
-  payload     Json?
+  id        Int    @id @default(autoincrement())
+  paymentId Int
+  eventType String
+  payload   Json?
 
-  createdAt   DateTime @default(now())
+  receivedAt DateTime @default(now())
 
-  payment     Payment @relation(fields: [paymentId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([eventType])
 }
 
-//////////////////////
+// ============================================================
 // DOCUMENTS
-//////////////////////
+// ============================================================
 
 model InsuranceDocument {
-  id            Int      @id @default(autoincrement())
-  insuranceId   Int
+  id           Int          @id @default(autoincrement())
+  insuranceId  Int
+  documentType DocumentType
+  fileUrl      String
 
-  fileUrl       String
-  documentType  String
+  // true = URL externe AAS (linkAttestation, linkCarteBrune)
+  // false = fichier uploadé manuellement
+  isExternalUrl Boolean @default(true)
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  insurance     Insurance @relation(fields: [insuranceId], references: [id])
+  insurance Insurance @relation(fields: [insuranceId], references: [id], onDelete: Cascade)
+
+  @@index([insuranceId, documentType])
+  @@index([insuranceId, createdAt])
 }
 
-//////////////////////
-// FLEET
-//////////////////////
+// ============================================================
+// FLOTTES
+// ============================================================
 
 model Fleet {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   ownerId     Int
-  reference   String
-  createdAt   DateTime @default(now())
+  reference   String // referenceFlotte envoyé à l'API AAS
+  name        String
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
-  owner       User            @relation(fields: [ownerId], references: [id])
-  vehicles    FleetVehicle[]
+  owner      User             @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  vehicles   FleetVehicle[]
+  quotes     InsuranceQuote[] // [FIX #1] relation inverse
+  insurances Insurance[] // [FIX #1] relation inverse
+
+  @@unique([ownerId, reference])
+  @@index([ownerId])
+  @@index([deletedAt])
 }
 
 model FleetVehicle {
-  id         Int @id @default(autoincrement())
-  fleetId    Int
-  vehicleId  Int
+  id        Int       @id @default(autoincrement())
+  fleetId   Int
+  vehicleId Int
+  addedAt   DateTime  @default(now())
+  removedAt DateTime?
 
-  fleet      Fleet   @relation(fields: [fleetId], references: [id])
-  vehicle    Vehicle @relation(fields: [vehicleId], references: [id])
+  fleet   Fleet   @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
 
   @@unique([fleetId, vehicleId])
-}
-
-//////////////////////
-// REFERRAL
-//////////////////////
-
-model ReferralCode {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  code      String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-
-  user      User @relation(fields: [userId], references: [id])
+  @@index([fleetId])
+  @@index([vehicleId])
 }
