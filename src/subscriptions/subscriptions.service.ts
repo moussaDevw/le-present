@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { ScreenshotService } from '../cloudinary/screenshot.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AasApiService } from '../quotes/services/aas-api.service';
 import { CreateSubscriptionInput } from './dto/create-subscription.input';
@@ -14,6 +15,7 @@ export class SubscriptionsService {
     private readonly prisma: PrismaService,
     private readonly aasApi: AasApiService,
     private readonly cloudinary: CloudinaryService,
+    private readonly screenshotService: ScreenshotService,
   ) { }
 
   async createSubscription(userId: number, input: CreateSubscriptionInput) {
@@ -245,18 +247,44 @@ export class SubscriptionsService {
 
     try {
       if (aasResponse.linkAttestation) {
-        this.logger.log(`Transfert de l'attestation vers Cloudinary pour l'assurance ${insuranceId}`);
-        const result = await this.cloudinary.uploadFromUrl(aasResponse.linkAttestation, `attestation_${insuranceId}`);
-        cloudinaryAttestationUrl = result.secure_url;
+        this.logger.log(`Traitement de l'attestation pour l'assurance ${insuranceId}`);
+        if (aasResponse.linkAttestation.includes('#') || !aasResponse.linkAttestation.toLowerCase().endsWith('.pdf')) {
+          this.logger.log(`Lien web détecté, analyse en cours...`);
+          const captureResult = await this.screenshotService.captureUrl(aasResponse.linkAttestation);
+          if (typeof captureResult === 'string') {
+            this.logger.log(`PDF intercepté, upload direct depuis l'URL...`);
+            const result = await this.cloudinary.uploadFromUrl(captureResult, `attestation_${insuranceId}`);
+            cloudinaryAttestationUrl = result.secure_url;
+          } else {
+            this.logger.log(`Capture d'écran effectuée, upload du buffer...`);
+            const result = await this.cloudinary.uploadFile(captureResult, `attestation_${insuranceId}`);
+            cloudinaryAttestationUrl = result.secure_url;
+          }
+        } else {
+          const result = await this.cloudinary.uploadFromUrl(aasResponse.linkAttestation, `attestation_${insuranceId}`);
+          cloudinaryAttestationUrl = result.secure_url;
+        }
       }
+      
       if (aasResponse.linkCarteBrune) {
-        this.logger.log(`Transfert de la carte brune vers Cloudinary pour l'assurance ${insuranceId}`);
-        const result = await this.cloudinary.uploadFromUrl(aasResponse.linkCarteBrune, `carte_brune_${insuranceId}`);
-        cloudinaryCarteBruneUrl = result.secure_url;
+        this.logger.log(`Traitement de la carte brune pour l'assurance ${insuranceId}`);
+        if (aasResponse.linkCarteBrune.includes('#') || !aasResponse.linkCarteBrune.toLowerCase().endsWith('.pdf')) {
+          const captureResult = await this.screenshotService.captureUrl(aasResponse.linkCarteBrune);
+          if (typeof captureResult === 'string') {
+            const result = await this.cloudinary.uploadFromUrl(captureResult, `carte_brune_${insuranceId}`);
+            cloudinaryCarteBruneUrl = result.secure_url;
+          } else {
+            const result = await this.cloudinary.uploadFile(captureResult, `carte_brune_${insuranceId}`);
+            cloudinaryCarteBruneUrl = result.secure_url;
+          }
+        } else {
+          const result = await this.cloudinary.uploadFromUrl(aasResponse.linkCarteBrune, `carte_brune_${insuranceId}`);
+          cloudinaryCarteBruneUrl = result.secure_url;
+        }
       }
     } catch (error) {
-      this.logger.error('Erreur lors du transfert vers Cloudinary', error);
-      // On continue avec les liens originaux en cas d'erreur Cloudinary
+      this.logger.error('Erreur lors du transfert vers Cloudinary ou de la capture d\'écran', error);
+      // On continue avec les liens originaux en cas d'erreur
     }
 
     // Mise à jour de l'assurance en base
