@@ -28,6 +28,8 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      introspection: true,
+      playground: true,
       csrfPrevention: false,
     }),
   ],
