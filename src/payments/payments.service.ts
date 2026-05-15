@@ -73,20 +73,23 @@ export class PaymentsService {
       }
     }
 
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'https://assure-present.sn';
     const payload = {
       amount: Number(invoice.total),
       currency: 'XOF',
-      country: 'SN',
       merchantReference: paymentReference,
       paymentReference: paymentReference,
-      redirectUrl: `${frontendUrl}/dashboard/subscriptions/success`,
+      orderDetails: [
+        {
+          name: `Assurance Auto - Contrat #${insuranceId}`,
+          price: Number(invoice.total),
+          quantity: 1,
+          taxRate: 0
+        }
+      ],
       customer: {
         name: `${insurance.user.firstName} ${insurance.user.lastName}`,
         phone: formattedPhone,
         email: insurance.user.email || 'customer@example.com',
-        country: 'SN',
-        locale: 'fr-FR',
       }
     };
 
@@ -102,8 +105,17 @@ export class PaymentsService {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json() as any;
-      console.log(data);
+      const responseText = await response.text();
+      let data: any;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        this.logger.error(`Bictorys a renvoyé du HTML au lieu de JSON. Statut: ${response.status}`);
+        this.logger.error(`Contenu reçu: ${responseText.substring(0, 500)}...`);
+        throw new BadRequestException('L\'API de paiement Bictorys a renvoyé une erreur formatée en HTML. Vérifiez les logs du serveur.');
+      }
+
       this.logger.debug(`Bictorys API Response: ${JSON.stringify(data)}`);
 
       if (!response.ok) {
