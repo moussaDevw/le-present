@@ -14,7 +14,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly subscriptionsService: SubscriptionsService,
-  ) {}
+  ) { }
 
   private mapProviderToBictorys(provider: PaymentProvider): string {
     switch (provider) {
@@ -40,7 +40,7 @@ export class PaymentsService {
     // 1. Vérifier l'assurance et sa facture
     const insurance = await this.prisma.insurance.findUnique({
       where: { id: insuranceId },
-      include: { 
+      include: {
         user: true,
         invoiceItems: { include: { invoice: true } }
       },
@@ -77,19 +77,22 @@ export class PaymentsService {
     const payload = {
       amount: Number(invoice.total),
       currency: 'XOF',
+      country: 'SN',
+      merchantReference: paymentReference,
       paymentReference: paymentReference,
-      successRedirectUrl: `${frontendUrl}/dashboard/subscriptions/success`,
-      errorRedirectUrl: `${frontendUrl}/dashboard/subscriptions/error`,
+      redirectUrl: `${frontendUrl}/dashboard/subscriptions/success`,
       customer: {
         name: `${insurance.user.firstName} ${insurance.user.lastName}`,
         phone: formattedPhone,
         email: insurance.user.email || 'customer@example.com',
+        country: 'SN',
+        locale: 'fr-FR',
       }
     };
 
     try {
       this.logger.log(`Appel Bictorys pour l'assurance ${insuranceId} (${bictorysPaymentType})`);
-      
+
       const response = await fetch(`${this.bictorysBaseUrl}/charges?payment_type=${bictorysPaymentType}`, {
         method: 'POST',
         headers: {
@@ -100,6 +103,7 @@ export class PaymentsService {
       });
 
       const data = await response.json() as any;
+      console.log(data);
       this.logger.debug(`Bictorys API Response: ${JSON.stringify(data)}`);
 
       if (!response.ok) {
@@ -133,7 +137,7 @@ export class PaymentsService {
   // Vérifier le statut d'un paiement (peut être appelé par un webhook ou manuellement)
   async checkPaymentStatus(transactionId: string) {
     const paymentKey = this.config.get<string>('PAYMENT_KEY');
-    
+
     const response = await fetch(`${this.bictorysBaseUrl}/transactions/${transactionId}`, {
       headers: {
         'X-Api-Key': paymentKey!,
@@ -144,6 +148,8 @@ export class PaymentsService {
 
     if (data.status === 'SUCCESS') {
       await this.handleSuccessfulPayment(transactionId);
+    } else if (data.status === 'FAILED') {
+      await this.handleFailedPayment(transactionId);
     }
 
     return data;
@@ -167,7 +173,7 @@ export class PaymentsService {
       // 2. Marquer la facture comme PAID
       await tx.invoice.update({
         where: { id: payment.invoiceId },
-        data: { 
+        data: {
           status: InvoiceStatus.PAID,
           paidAt: new Date(),
         },
@@ -192,9 +198,22 @@ export class PaymentsService {
     }
   }
 
+  private async handleFailedPayment(transactionId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { externalTransactionId: transactionId },
+    });
+
+    if (!payment || payment.status === PaymentStatus.FAILED) return;
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: PaymentStatus.FAILED },
+    });
+  }
+
   // Simulation pour le test local
   async simulatePaymentSuccess(transactionReference: string) {
-     await this.handleSuccessfulPayment(transactionReference);
-     return { success: true };
+    await this.handleSuccessfulPayment(transactionReference);
+    return { success: true };
   }
 }
