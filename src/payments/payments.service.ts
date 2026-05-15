@@ -73,12 +73,13 @@ export class PaymentsService {
       }
     }
 
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'https://assure-present.sn';
     const payload = {
       amount: Number(invoice.total),
       currency: 'XOF',
       paymentReference: paymentReference,
-      successRedirectUrl: 'https://assure-present.sn/payment/success',
-      errorRedirectUrl: 'https://assure-present.sn/payment/error',
+      successRedirectUrl: `${frontendUrl}/dashboard/subscriptions/success`,
+      errorRedirectUrl: `${frontendUrl}/dashboard/subscriptions/error`,
       customer: {
         name: `${insurance.user.firstName} ${insurance.user.lastName}`,
         phone: formattedPhone,
